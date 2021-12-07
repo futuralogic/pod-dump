@@ -1,0 +1,12 @@
+{
+  "sqltools.connections": [
+    {
+      "previewLimit": 50,
+      "driver": "SQLite",
+      "name": "apple-podcasts",
+      "group": "pod-dump",
+      "database": "/Users/futura/Library/Group Containers/243LU875E5.groups.com.apple.podcasts/Documents/MTLibrary.sqlite"
+    }
+  ],
+  "sqltools.useNodeRuntime": true
+}
