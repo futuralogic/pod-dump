@@ -5,8 +5,8 @@ namespace futura.pod_dump;
 
 public class Registration : IConfigDefault
 {
-    public string? Id { get; set; }
-    public string? Title { get; set; }
+    public string Id { get; set; } = string.Empty;
+    public string Title { get; set; } = string.Empty;
 
     public DateTime? LastProcessed { get; set; }
 

@@ -12,9 +12,12 @@ public static class AddRunner
 
         // Check whether this podcast is already registered.
         var reglist = cfg.FindRegistrations(searchTerm!, isSearchExact);
-        var multiple = reglist.Count >= 1;
-        if (reglist.Count > 0)
+        var regCount = reglist.Count();
+
+        if (regCount > 0)
         {
+            var multiple = regCount > 1;
+
             if (multiple)
             {
                 Out.Line("Existing podcast registrations match your search criteria.");
@@ -23,27 +26,39 @@ public static class AddRunner
             {
                 Out.Line("An existing podcast registration matches your search criteria.");
             }
+
             int count = 1;
             foreach (var reg in reglist)
             {
                 Out.Line($"{count++} {reg.Title}");
             }
-            return;
+
+            Out.Line("");
         }
 
         // Find podcasts - get metadata from SQL Lite
         var pm = new PodcastManager();
         var results = await pm.FindPodcast(searchTerm, isSearchExact);
 
-        if (!results.Any())
+        var resultsToAdd = results.Where(p => !reglist.Any(r => r.Id.Equals(p.Id, StringComparison.OrdinalIgnoreCase)));
+
+        if (!resultsToAdd.Any())
         {
-            Out.Line($"No podcasts found matching search term: {searchTerm}");
+            Out.Line($"No additional podcasts found matching: {searchTerm}");
             return;
         }
 
-        foreach (var found in results)
+        if (resultsToAdd.Count() == 1)
         {
+            Out.Line("Found a new podcast to register:");
+        }
+        else
+        {
+            Out.Line("Found new podcasts to register:");
+        }
 
+        foreach (var found in resultsToAdd)
+        {
             var newReg = new Registration(cfg.AppConfiguration);
 
             if (!string.IsNullOrEmpty(options.CustomTargetLocation))
@@ -64,7 +79,7 @@ public static class AddRunner
             newReg.Id = found.Id;
             newReg.Title = found.Podcast;
 
-            Out.Line($"Registering: {found.Podcast}");
+            Out.Line($"Registering new: {found.Podcast}");
 
             // Write podcast meta file to registrations folder
             await cfg.AddRegistration(newReg);

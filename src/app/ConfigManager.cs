@@ -171,6 +171,48 @@ public class ConfigManager
         }
     }
 
+    bool _isRegistrationCacheDirty = false;
+
+    void InvalidateRegistrationCache()
+    {
+        this._isRegistrationCacheDirty = true;
+    }
+
+    bool _isRegistrationListLoaded = false;
+    List<Registration> _registrations = new List<Registration>();
+
+    public List<Registration> Registrations
+    {
+        get
+        {
+            if (!_isRegistrationListLoaded || _isRegistrationCacheDirty)
+            {
+                var files = Directory.GetFiles(PodcastRegistrationsPath, "*.json");
+
+                _registrations = new List<Registration>();
+
+                foreach (var file in files)
+                {
+                    var fileText = File.ReadAllText(file);
+                    var reg = JsonSerializer.Deserialize<Registration>(fileText);
+                    if (reg != null)
+                    {
+                        _registrations.Add(reg);
+                    }
+                }
+
+                _isRegistrationCacheDirty = false;
+                _isRegistrationListLoaded = true;
+            }
+            return _registrations;
+        }
+        set
+        {
+            _registrations = value;
+            InvalidateRegistrationCache();
+        }
+    }
+
     /// <summary>
     /// Register's a podcast.
     /// </summary>
@@ -207,19 +249,25 @@ public class ConfigManager
     /// Retrieve a podcast by its unique identifier
     /// </summary>
     /// <returns></returns>
-    public Registration GetRegistration(string id)
+    public Registration? GetRegistration(string id)
     {
-        return new Registration();
+        return Registrations?.Where(r => r.Id.Equals(id, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
     }
 
     public bool HasRegistration(string title, bool exact = false)
     {
-        return false;
+        return Registrations.Where(r => exact ? r.Title.Equals(title, StringComparison.OrdinalIgnoreCase) : r.Title.Contains(title, StringComparison.OrdinalIgnoreCase)).Any();
     }
 
-    public List<Registration> FindRegistrations(string title, bool exact = false)
+    public IEnumerable<Registration> FindRegistrations(string title, bool exact = false)
     {
-        return new List<Registration>();
-    }
+        var searchTerm = title.ToLower();
 
+        return from reg in Registrations
+               where
+               !string.IsNullOrEmpty(reg.Title) &&
+               ((!exact && reg.Title.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)) || (exact && reg.Title.Equals(searchTerm, StringComparison.OrdinalIgnoreCase)))
+               select reg;
+
+    }
 }
