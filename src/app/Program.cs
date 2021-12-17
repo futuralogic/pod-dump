@@ -1,2 +1,6 @@
-﻿// See https://aka.ms/new-console-template for more information
-Console.WriteLine("Hello, World!");
+﻿using CommandLine;
+
+var result = Parser.Default.ParseArguments<AddOptions>(args)
+	.WithParsed<AddOptions>(async o => await AddRunner.Execute(o));
+
+
