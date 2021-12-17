@@ -1,0 +1,17 @@
+SELECT
+	p.ZAUTHOR,
+	p.ZTITLE As Podcast,
+	e.ZEPISODENUMBER As EpisodeNumber,
+	e.ZTITLE As Episode,
+	e.ZPUBDATE,
+	e.ZIMPORTDATE,
+	e.ZMETADATATIMESTAMP,
+	e.ZASSETURL
+from ZMTEPISODE e
+join ZMTPODCAST p
+    on e.ZPODCASTUUID = p.ZUUID
+where
+	e.ZASSETURL IS NOT NULL
+	AND e.ZASSETURL LIKE '%Container%'
+    AND p.ZTITLE LIKE '%hardcore%'
+order by e.ZPUBDATE;
