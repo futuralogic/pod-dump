@@ -20,5 +20,8 @@ public class ConfigOptions
 	[Option("reset", Group = "config", HelpText = "Reset configuration to defaults.")]
 	public bool ResetConfiguration { get; set; }
 
+	[Option('u', "uninstall", Group = "config", HelpText = "Removes app configuration.")]
+	public bool UninstallConfiguration { get; set; }
+
 
 }

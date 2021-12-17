@@ -1,47 +1,52 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <TargetFramework>net6.0</TargetFramework>
-    <RootNamespace>futura.pod_dump</RootNamespace>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-    <BaseVersion>1.0.0</BaseVersion>
-    <Version Condition="'$(Configuration)'=='Debug'">$(BaseVersion)-dev</Version>
-    <Version Condition="'$(Configuration)'!='Debug'">$(BaseVersion)</Version>
-  </PropertyGroup>
-
-  <ItemGroup>
-    <PackageReference Include="CommandLineParser" Version="2.9.0-preview1" />
-  </ItemGroup>
-
-  <PropertyGroup>
-    <!-- <PowerShellExe>%WINDIR%\System32\WindowsPowerShell\v1.0\powershell.exe</PowerShellExe> -->
-    <PowerShellExe>pwsh</PowerShellExe>
-    <PowerShellCmd>$(PowerShellExe) -NonInteractive -NoProfile -ExecutionPolicy Unrestricted -wd "$(MSBuildProjectDirectory)"</PowerShellCmd>
-  </PropertyGroup>
-
-  <Target Name="GetChangesetId" BeforeTargets="BuildConstants">
     <PropertyGroup>
-      <GitCommand>git rev-parse --short HEAD</GitCommand>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net6.0</TargetFramework>
+        <RootNamespace>futura.pod_dump</RootNamespace>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <BaseVersion>1.0.0</BaseVersion>
+        <Version Condition="'$(Configuration)'=='Debug'">$(BaseVersion)-dev</Version>
+        <Version Condition="'$(Configuration)'!='Debug'">$(BaseVersion)</Version>
     </PropertyGroup>
-    <Exec ConsoleToMSBuild="true" Command="$(PowerShellCmd) -c &quot;&amp; { &amp; $(GitCommand) } &quot;">
-      <Output TaskParameter="ConsoleOutput" PropertyName="SCMHash" />
-    </Exec>
-  </Target>
 
-  <Target Name="BuildConstants" AfterTargets="GetChangesetId" BeforeTargets="GetAssemblyAttributes">
-    <WriteLinesToFile File="$(IntermediateOutputPath)build_date_gen.cs" Lines="static partial class Builtin { public static long CompileTime = $([System.DateTime]::UtcNow.Ticks)%3B public static string CompileCommit = &quot;$(SCMHash)&quot;%3B }" Overwrite="true" />
     <ItemGroup>
-      <Compile Include="$(IntermediateOutputPath)build_date_gen.cs" />
+        <PackageReference Include="CommandLineParser" Version="2.9.0-preview1" />
+        <PackageReference Include="System.Text.Json" Version="6.0.1" />
     </ItemGroup>
-  </Target>
 
-  <Target Name="UpdateInformationalVersion" AfterTargets="GetChangesetId" BeforeTargets="GetAssemblyAttributes">
+    <ItemGroup>
+        <EmbeddedResource Include="resources/**" />
+    </ItemGroup>
+
     <PropertyGroup>
-      <InformationalVersion>$(InformationalVersion)+$(SCMHash)</InformationalVersion>
+        <!-- <PowerShellExe>%WINDIR%\System32\WindowsPowerShell\v1.0\powershell.exe</PowerShellExe> -->
+        <PowerShellExe>pwsh</PowerShellExe>
+        <PowerShellCmd>$(PowerShellExe) -NonInteractive -NoProfile -ExecutionPolicy Unrestricted -wd "$(MSBuildProjectDirectory)"</PowerShellCmd>
     </PropertyGroup>
-  </Target>
+
+    <Target Name="GetChangesetId" BeforeTargets="BuildConstants">
+        <PropertyGroup>
+            <GitCommand>git rev-parse --short HEAD</GitCommand>
+        </PropertyGroup>
+        <Exec ConsoleToMSBuild="true" Command="$(PowerShellCmd) -c &quot;&amp; { &amp; $(GitCommand) } &quot;">
+            <Output TaskParameter="ConsoleOutput" PropertyName="SCMHash" />
+        </Exec>
+    </Target>
+
+    <Target Name="BuildConstants" AfterTargets="GetChangesetId" BeforeTargets="GetAssemblyAttributes">
+        <WriteLinesToFile File="$(IntermediateOutputPath)build_date_gen.cs" Lines="static partial class Builtin { public static long CompileTime = $([System.DateTime]::UtcNow.Ticks)%3B public static string CompileCommit = &quot;$(SCMHash)&quot;%3B }" Overwrite="true" />
+        <ItemGroup>
+            <Compile Include="$(IntermediateOutputPath)build_date_gen.cs" />
+        </ItemGroup>
+    </Target>
+
+    <Target Name="UpdateInformationalVersion" AfterTargets="GetChangesetId" BeforeTargets="GetAssemblyAttributes">
+        <PropertyGroup>
+            <InformationalVersion>$(InformationalVersion)+$(SCMHash)</InformationalVersion>
+        </PropertyGroup>
+    </Target>
 
 
 </Project>
