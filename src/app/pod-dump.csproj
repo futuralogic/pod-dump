@@ -16,10 +16,6 @@
         <PackageReference Include="System.Text.Json" Version="6.0.1" />
     </ItemGroup>
 
-    <ItemGroup>
-        <EmbeddedResource Include="resources/**" />
-    </ItemGroup>
-
     <PropertyGroup>
         <!-- <PowerShellExe>%WINDIR%\System32\WindowsPowerShell\v1.0\powershell.exe</PowerShellExe> -->
         <PowerShellExe>pwsh</PowerShellExe>

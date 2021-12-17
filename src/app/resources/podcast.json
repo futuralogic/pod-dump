@@ -1,8 +1,0 @@
-{
-  "PodcastId": null,
-  "Title": null,
-  "LastProcessed": null,
-  "TargetLocation": null,
-  "RelativeLocation": null,
-  "FilenameConvention": "{podcast}{ - }{title}.{ext}"
-}

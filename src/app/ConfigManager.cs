@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 //using System.Reflection;
 using System.Text.Json;
 
+namespace futura.pod_dump;
 /// <summary>
 /// Manages configuration data.
 /// </summary>
@@ -48,9 +49,11 @@ public class ConfigManager
 	/// </summary>
 	const string DEFAULT_PODCAST_CONFIG_FILE_KEY = "resources.podcast.json";
 
-	string GlobalConfigFile => Path.Combine(GetLocalAppDataFolder, APPNAMESPACE, GLOBAL_CONFIGURATION_FILENAME);
-	string PodcastRegistrations => Path.Combine(GetLocalAppDataFolder, APPNAMESPACE, PODCAST_REGISTRATIONS_FOLDER);
-	string AppData => Path.Combine(GetLocalAppDataFolder, APPNAMESPACE);
+	string GlobalConfigFilePath => Path.Combine(GetLocalAppDataPath, APPNAMESPACE, GLOBAL_CONFIGURATION_FILENAME);
+	string PodcastRegistrationsPath => Path.Combine(GetLocalAppDataPath, APPNAMESPACE, PODCAST_REGISTRATIONS_FOLDER);
+	string AppDataPath => Path.Combine(GetLocalAppDataPath, APPNAMESPACE);
+	// https://stackoverflow.com/questions/45255481/alternative-for-localAppDataPath-environment-variable-on-osx
+	string GetLocalAppDataPath => Path.Combine(Environment.GetEnvironmentVariable("HOME") ?? "~", "Library", "Application Support");
 
 	/// <summary>
 	/// Checks whether our app config exists. Will create what is missing (if reasonable, otherwise throws)
@@ -59,21 +62,21 @@ public class ConfigManager
 	{
 		// Check:
 		// 1. app folder in Application Support
-		if (!Directory.Exists(AppData))
+		if (!Directory.Exists(AppDataPath))
 		{
-			Directory.CreateDirectory(AppData);
+			Directory.CreateDirectory(AppDataPath);
 		}
 
 		// 2. global configuration file
-		if (!File.Exists(GlobalConfigFile))
+		if (!File.Exists(GlobalConfigFilePath))
 		{
-			await WriteDefaultGlobalConfig(GlobalConfigFile).ConfigureAwait(false);
+			await WriteDefaultGlobalConfig(GlobalConfigFilePath).ConfigureAwait(false);
 		}
 
 		// 3. podcasts folder exists
-		if (!Directory.Exists(PodcastRegistrations))
+		if (!Directory.Exists(PodcastRegistrationsPath))
 		{
-			Directory.CreateDirectory(PodcastRegistrations);
+			Directory.CreateDirectory(PodcastRegistrationsPath);
 		}
 
 	}
@@ -85,7 +88,7 @@ public class ConfigManager
 	public async Task ResetGlobalConfig()
 	{
 		// 2. global configuration file
-		await WriteDefaultGlobalConfig(GlobalConfigFile, true).ConfigureAwait(false);
+		await WriteDefaultGlobalConfig(GlobalConfigFilePath, true).ConfigureAwait(false);
 	}
 
 
@@ -101,9 +104,8 @@ public class ConfigManager
 		{
 			File.Delete(configFilePath);
 		}
-		var baseconfig = EmbeddedHelper.GetString("config.json");
-		await File.WriteAllTextAsync(configFilePath, baseconfig).ConfigureAwait(false);
-		InvalidateGlobalConfig();
+		var baseconfig = new GlobalConfig();
+		await WriteGlobalConfig(configFilePath, baseconfig);
 	}
 
 	async Task WriteGlobalConfig(string configFilePath, GlobalConfig newConfig)
@@ -115,10 +117,9 @@ public class ConfigManager
 				File.Delete(configFilePath);
 			}
 
-			_globalConfigCached = newConfig;
 			var configString = JsonSerializer.Serialize(newConfig);
 			await File.WriteAllTextAsync(configFilePath, configString).ConfigureAwait(false);
-			InvalidateGlobalConfig();
+			AppConfiguration = newConfig;
 		}
 		catch (Exception e)
 		{
@@ -132,32 +133,37 @@ public class ConfigManager
 	/// </summary>
 	public void CleanupApp()
 	{
-		var appBase = AppData;
+		var appBase = AppDataPath;
 		if (Directory.Exists(appBase))
 		{
 			Directory.Delete(appBase, true);
 		}
 	}
 
-	GlobalConfig? _globalConfigCached;
-	bool _isGlobalConfigCacheDirty = true;
+	bool _isGlobalConfigCacheDirty = false;
 
 	void InvalidateGlobalConfig()
 	{
 		this._isGlobalConfigCacheDirty = true;
 	}
 
+	GlobalConfig? _globalConfigCached;
 	public GlobalConfig AppConfiguration
 	{
 		get
 		{
 			if (_globalConfigCached == null || _isGlobalConfigCacheDirty)
 			{
-				var file = File.ReadAllText(GlobalConfigFile);
+				var file = File.ReadAllText(GlobalConfigFilePath);
 				_globalConfigCached = JsonSerializer.Deserialize<GlobalConfig>(file);
 				_isGlobalConfigCacheDirty = false;
 			}
 			return _globalConfigCached!;
+		}
+		protected set
+		{
+			_globalConfigCached = value;
+			InvalidateGlobalConfig();
 		}
 	}
 
@@ -183,7 +189,7 @@ public class ConfigManager
 	public async Task UpdateRegistation(Registration update)
 	{
 		var fileName = update.ConfigFilename!;
-		var path = Path.Combine(PodcastRegistrations, fileName);
+		var path = Path.Combine(PodcastRegistrationsPath, fileName);
 		var regString = JsonSerializer.Serialize(update);
 		await File.WriteAllTextAsync(path, regString);
 	}
@@ -211,8 +217,5 @@ public class ConfigManager
 	{
 		return new List<Registration>();
 	}
-
-	// https://stackoverflow.com/questions/45255481/alternative-for-localappdata-environment-variable-on-osx
-	string GetLocalAppDataFolder => Path.Combine(Environment.GetEnvironmentVariable("HOME") ?? "~", "Library", "Application Support");
 
 }

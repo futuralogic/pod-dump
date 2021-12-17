@@ -1,3 +1,4 @@
+namespace futura.pod_dump;
 public class GlobalConfig : IConfigDefault
 {
 	public const string DEFAULT_FILENAME_CONVENTION = "{podcast}{ - }{title}.{ext}";

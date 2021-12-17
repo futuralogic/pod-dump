@@ -1,3 +1,4 @@
+namespace futura.pod_dump;
 public static class Out
 {
 	public static void Line(string output)

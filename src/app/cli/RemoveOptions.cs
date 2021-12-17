@@ -1,4 +1,5 @@
 using CommandLine;
+namespace futura.pod_dump;
 
 [Verb("remove", HelpText = "Remove a podcast registration using its title.")]
 public class RemoveOptions

@@ -1,5 +1,5 @@
 using CommandLine;
-
+namespace futura.pod_dump;
 [Verb("config", HelpText = "Set application defaults.")]
 public class ConfigOptions
 {

@@ -1,6 +1,8 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
+namespace futura.pod_dump;
+
 public class Registration : IConfigDefault
 {
 	public string? Id { get; set; }
@@ -10,7 +12,7 @@ public class Registration : IConfigDefault
 
 	public string? TargetLocation { get; set; }
 	public string? RelativeLocation { get; set; }
-	public string? FilenameConvention { get; set; }
+	public string? FilenameConvention { get; set; } = NewConfigFilename;
 
 	/// <summary>
 	/// Used to denote the filename of the config file on the filesystem.

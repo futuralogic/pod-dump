@@ -1,7 +1,8 @@
+namespace futura.pod_dump;
 public static class ConfigRunner
 {
 
-	public static Task Execute(ConfigOptions options)
+	public static async Task Execute(ConfigOptions options)
 	{
 
 		if (options.Current)
@@ -18,6 +19,16 @@ public static class ConfigRunner
 
 		}
 
+		if (options.ResetConfiguration)
+		{
+
+			var cfg = new ConfigManager();
+
+			Out.Line("Resetting global configuration to defaults.");
+
+			await cfg.ResetGlobalConfig();
+		}
+
 		if (options.UninstallConfiguration)
 		{
 			var cfg = new ConfigManager();
@@ -25,7 +36,7 @@ public static class ConfigRunner
 			cfg.CleanupApp();
 		}
 
-		return Task.CompletedTask;
+		return;
 	}
 
 }

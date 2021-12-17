@@ -1,5 +1,5 @@
 using CommandLine;
-
+namespace futura.pod_dump;
 [Verb("add", HelpText = "Register a podcast using its title.")]
 public class AddOptions
 {
