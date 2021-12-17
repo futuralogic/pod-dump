@@ -1,0 +1,10 @@
+public static class ExtractRunner
+{
+
+	public static Task Execute(ExtractOptions options)
+	{
+		Console.WriteLine("Processing...");
+		return Task.CompletedTask;
+	}
+
+}
