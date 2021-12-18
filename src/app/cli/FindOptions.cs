@@ -9,5 +9,4 @@ public class FindOptions
 
     [Option('x', "exact", HelpText = "Force exact matching of the podcast title.")]
     public bool ExactMatch { get; set; }
-
 }

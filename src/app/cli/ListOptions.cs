@@ -2,12 +2,11 @@ using CommandLine;
 
 namespace futura.pod_dump;
 
-[Verb("list", HelpText = "Lists registered podcasts.")]
+[Verb("list", HelpText = "Lists registered podcasts with pending episodes that haven't been processed (extracted).")]
 public class ListOptions
 {
-
-    [Option('p', "pending", HelpText = "Only show podcasts with pending episodes.")]
-    public bool Pending { get; set; }
+    [Option('a', "all", HelpText = "List all registered podcasts.")]
+    public bool ShowAll { get; set; }
 
     [Option('x', "extended", HelpText = "Display additional registration details (such as ID - used to remove a registration).")]
     public bool ShowExtended { get; set; }

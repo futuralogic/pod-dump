@@ -7,7 +7,6 @@ namespace futura.pod_dump;
 /// </summary>
 public class RegistrationManager
 {
-
     /// <summary>
     /// Directory.GetFiles search path for configuration files (JSON data)
     /// </summary>
@@ -38,7 +37,7 @@ public class RegistrationManager
     }
 
     bool _isRegistrationListLoaded = false;
-    List<Registration> _registrations = new List<Registration>();
+    List<Registration> _registrations = new();
 
     public List<Registration> Registrations
     {
@@ -196,6 +195,4 @@ public class RegistrationManager
                 )
                select reg;
     }
-
-
 }

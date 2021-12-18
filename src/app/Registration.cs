@@ -6,9 +6,17 @@ namespace futura.pod_dump;
 
 public class Registration : IConfigDefault
 {
-    public string Id { get; set; } = string.Empty;
+    /// <summary>
+    /// Unique Id for this podcast registration.
+    /// </summary>
+    /// <value></value>
+    public Guid Uuid { get; set; }
     public string Title { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Tracks when we last processed or extracted this podcast.
+    /// </summary>
+    /// <value></value>
     public DateTime? LastProcessed { get; set; }
 
     public string? TargetLocation { get; set; }

@@ -40,7 +40,7 @@ public static class AddRunner
         var pm = new PodcastManager();
         var results = await pm.FindPodcast(searchTerm, isSearchExact);
 
-        var resultsToAdd = results.Where(p => !reglist.Any(r => r.Id.Equals(p.Id, StringComparison.OrdinalIgnoreCase)));
+        var resultsToAdd = results.Where(p => !reglist.Any(r => r.Uuid.Equals(p.Id)));
 
         if (!resultsToAdd.Any())
         {
@@ -78,7 +78,7 @@ public static class AddRunner
                 newReg.FilenameConvention = options.CustomFilenameConvention;
             }
 
-            newReg.Id = found.Id;
+            newReg.Uuid = Guid.Parse(found.Id);
             newReg.Title = found.Podcast;
 
             Out.Line($"Registering new: {found.Podcast}");

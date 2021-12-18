@@ -7,12 +7,11 @@ namespace futura.pod_dump;
 /// </summary>
 public class ConfigManager
 {
-
     /// <summary>
     /// Full path to global configuration file.
     /// </summary>
     /// <returns></returns>
-    string GlobalConfigFilePath => Path.Combine(AppConst.Paths.AppDataPath, GLOBAL_CONFIGURATION_FILENAME);
+    static string GlobalConfigFilePath => Path.Combine(AppConst.Paths.AppDataPath, GLOBAL_CONFIGURATION_FILENAME);
 
     /// <summary>
     /// Default/global configuration file.
@@ -65,7 +64,6 @@ public class ConfigManager
         }
 
         RegistrationManager.InitRegistrationConfig();
-
     }
 
     /// <summary>
@@ -77,7 +75,6 @@ public class ConfigManager
         // 2. global configuration file
         await WriteDefaultGlobalConfig(GlobalConfigFilePath, true).ConfigureAwait(false);
     }
-
 
     /// <summary>
     /// Creates a global config file.
@@ -124,7 +121,7 @@ public class ConfigManager
     /// <summary>
     /// Removes the entire app folder from Application Support. No UI surface at this time.
     /// </summary>
-    public void CleanupApp()
+    public static void CleanupApp()
     {
         var appBase = AppConst.Paths.AppDataPath;
         if (Directory.Exists(appBase))
@@ -133,7 +130,6 @@ public class ConfigManager
         }
     }
 
-
     /// <summary>
     /// Invalidate the config cache.
     /// </summary>
@@ -141,5 +137,4 @@ public class ConfigManager
     {
         this._isGlobalConfigCacheDirty = true;
     }
-
 }

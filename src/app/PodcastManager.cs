@@ -6,7 +6,6 @@ namespace futura.pod_dump;
 
 public class PodcastManager
 {
-
     /// <summary>
     /// Base path where Apple podcasts are stored
     /// </summary>
@@ -34,7 +33,6 @@ public class PodcastManager
     /// <returns></returns>
     string ApplePodcastAudioFilePath => Path.Combine(AppConst.Paths.HomeDirPath, DEFAULT_APPLE_PODCAST_LOCATION, DEFAULT_APPLE_PODCAST_AUDIO);
 
-
     /// <summary>
     /// Searches podcasts by podcast title.
     /// </summary>
@@ -53,7 +51,7 @@ public class PodcastManager
     /// <summary>
     /// Registers custom type mapper for Dapper -> Sqlite use.
     /// </summary>
-    void SetupSqlMapper()
+    static void SetupSqlMapper()
     {
         // Register type converter for dapper use
         //https://docs.microsoft.com/en-us/dotnet/standard/data/sqlite/dapper-limitations
@@ -62,46 +60,42 @@ public class PodcastManager
 
     public async Task<IEnumerable<dynamic>> FindPodcast(string searchTerm, bool exact)
     {
-        var cfg = new ConfigManager();
         var cs = $"Data Source={ApplePodcastSqlitePath};Cache=Default;Mode=ReadOnly";
 
         //System.Diagnostics.Debug.WriteLine("cs: {0}", cs);
 
-        using (var conn = new SqliteConnection(cs))
+        using var conn = new SqliteConnection(cs);
+        conn.Open();
+
+        var sql = EmbeddedHelper.GetString(SQL_FIND_PODCASTS);
+
+        string term = string.Empty;
+
+        if (!exact)
         {
-            conn.Open();
-
-            var sql = EmbeddedHelper.GetString(SQL_FIND_PODCASTS);
-
-            string term = string.Empty;
-
-            if (!exact)
-            {
-                term = $"%{searchTerm}%";
-            }
-            else
-            {
-                term = searchTerm;
-            }
-
-            var searchOptions = new
-            {
-                Search = term
-            };
-
-            var result = await conn.QueryAsync<dynamic>(sql, searchOptions);
-
-            // Debug info if needed:
-            //System.Diagnostics.Debug.WriteLine("FindPodcast row count: {0}", result.Count());
-
-            /*foreach (var data in result)
-            {
-                Out.Line($"id: {data.Podcast}");
-            }*/
-
-            return result;
-
+            term = $"%{searchTerm}%";
         }
+        else
+        {
+            term = searchTerm;
+        }
+
+        var searchOptions = new
+        {
+            Search = term
+        };
+
+        var result = await conn.QueryAsync<dynamic>(sql, searchOptions);
+
+        // Debug info if needed:
+        //System.Diagnostics.Debug.WriteLine("FindPodcast row count: {0}", result.Count());
+
+        /*foreach (var data in result)
+        {
+            Out.Line($"id: {data.Podcast}");
+        }*/
+
+        return result;
     }
 
     /// <summary>
@@ -111,13 +105,16 @@ public class PodcastManager
     public async Task EnrichRegistrations(IEnumerable<Registration> registrations)
     {
         // Load all registrations
-        var subscribedUUIDs = registrations.Select(r => Guid.Parse(r.Id));
+        IEnumerable<Guid> subscribedUUIDs = from reg in registrations
+                                            where reg != null
+                                            select reg.Uuid;
+
         var podcastData = await GetEpisodeData(subscribedUUIDs);
 
         //await LoadSqlPodcastData(registrations);
         foreach (var reg in registrations)
         {
-            EnrichRegistration(reg, podcastData.Where(p => p.Id.Equals(reg.Id)));
+            EnrichRegistration(reg, podcastData.Where(p => reg.Uuid.ToString().Equals(p.Id, StringComparison.OrdinalIgnoreCase)));
         }
     }
 
@@ -130,7 +127,7 @@ public class PodcastManager
     {
         var episodes = from podcast in podcastData
                        where
-                           podcast.Id == registration.Id
+                           Guid.Parse(podcast.Id) == registration.Uuid
                        select podcast;
 
         registration.PendingEpisodes = episodes.Count();
@@ -155,38 +152,32 @@ public class PodcastManager
     /// <returns></returns>
     async Task<IEnumerable<dynamic>> GetEpisodeData(IEnumerable<Guid> podcastUUIds)
     {
-        var cfg = new ConfigManager();
         var cs = $"Data Source={ApplePodcastSqlitePath};Cache=Default;Mode=ReadOnly";
 
         //System.Diagnostics.Debug.WriteLine("cs: {0}", cs);
 
-        using (var conn = new SqliteConnection(cs))
+        using var conn = new SqliteConnection(cs);
+        conn.Open();
+
+        var sql = EmbeddedHelper.GetString(SQL_GET_EPISODES_BY_PODCAST_ID);
+
+        string term = string.Empty;
+
+        var queryParams = new
         {
-            conn.Open();
+            Ids = podcastUUIds
+        };
 
-            var sql = EmbeddedHelper.GetString(SQL_GET_EPISODES_BY_PODCAST_ID);
+        var result = await conn.QueryAsync<dynamic>(sql, queryParams);
 
-            string term = string.Empty;
+        // Debug info if needed:
+        // System.Diagnostics.Debug.WriteLine("row count: {0}", result.Count());
 
-            var queryParams = new
-            {
-                Ids = podcastUUIds
-            };
+        // foreach (var data in result)
+        // {
+        //     Out.Line($"id:  {data.Episode} - {data.Url}");
+        // }
 
-            var result = await conn.QueryAsync<dynamic>(sql, queryParams);
-
-            // Debug info if needed:
-            // System.Diagnostics.Debug.WriteLine("row count: {0}", result.Count());
-
-            // foreach (var data in result)
-            // {
-            //     Out.Line($"id:  {data.Episode} - {data.Url}");
-            // }
-
-            return result;
-
-        }
+        return result;
     }
-
-
 }

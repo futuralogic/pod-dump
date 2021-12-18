@@ -1,7 +1,6 @@
 namespace futura.pod_dump;
 public static class FindRunner
 {
-
     public static async Task Execute(FindOptions options)
     {
         var searchTerm = options.Title;

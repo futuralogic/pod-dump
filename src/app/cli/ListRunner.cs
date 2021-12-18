@@ -37,14 +37,14 @@ public static class ListRunner
 
         // Build PODCAST filter:
         IEnumerable<Registration> query = regman.Registrations;
-        if (options.Pending)
+        if (!options.ShowAll)
         {
             query = query.Where(r => r.PendingEpisodes >= 1);
         }
         // Add an order by podcast title.
         query = query.OrderBy(r => r.Title);
 
-        if (options.Pending && !query.Any())
+        if (!options.ShowAll && !query.Any())
         {
             Out.Text("No podcasts pending extraction.");
         }
@@ -77,7 +77,9 @@ public static class ListRunner
                 // CONFIG FILE NAME
                 Out.Text(Path.GetFileName(reg.ConfigFilename).PadRight(CONFIG_WIDTH));
                 // ZUUID
-                Out.Text(reg.Id.PadRight(ZUUID_WIDTH));
+
+                var uuid = reg.Uuid.ToString();
+                Out.Text(uuid.PadRight(ZUUID_WIDTH));
 
             }
 
@@ -86,5 +88,4 @@ public static class ListRunner
 
         return Task.CompletedTask;
     }
-
 }

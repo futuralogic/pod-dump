@@ -3,12 +3,10 @@ namespace futura.pod_dump;
 
 public class Extractor
 {
+    // Given a source filename, copy the file, tag it in new location.
 
-	// Given a source filename, copy the file, tag it in new location.
-
-	public void Extract()
-	{
-		Console.WriteLine("Extracting...");
-	}
-
+    public void Extract()
+    {
+        Console.WriteLine("Extracting...");
+    }
 }

@@ -10,7 +10,7 @@
       "request": "launch",
       "preLaunchTask": "build",
       "program": "${workspaceFolder}/src/app/bin/Debug/net6.0/pod-dump.dll",
-      "args": ["remove", "--id", "1340"],
+      "args": ["list"],
       "cwd": "${workspaceFolder}/src/app",
       "console": "internalConsole",
       "stopAtEntry": false

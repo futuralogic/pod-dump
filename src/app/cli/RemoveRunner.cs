@@ -20,7 +20,6 @@ public static class RemoveRunner
                 Out.Line("Stack:");
                 Out.Line(problem.ToString());
             }
-
         }
         else
         {
@@ -29,5 +28,4 @@ public static class RemoveRunner
 
         return Task.CompletedTask;
     }
-
 }
