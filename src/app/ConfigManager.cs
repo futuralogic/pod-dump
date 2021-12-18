@@ -9,6 +9,12 @@ namespace futura.pod_dump;
 /// </summary>
 public class ConfigManager
 {
+
+    /// <summary>
+    /// Directory.GetFiles search path for configuration files (JSON data)
+    /// </summary>
+    const string CONFIG_FILE_SEARCH_PATH = "*.json";
+
     /// <summary>
     /// Base path where Apple podcasts are stored
     /// </summary>
@@ -40,24 +46,47 @@ public class ConfigManager
     const string GLOBAL_CONFIGURATION_FILENAME = "config.json";
 
     /// <summary>
-    /// Embedded resource key to our default config (for initial setup, resets, etc)
+    /// Full path to global configuration file.
     /// </summary>
-    const string DEFAULT_GLOBAL_CONFIG_FILE_KEY = "resources.config.json";
+    /// <returns></returns>
+    string GlobalConfigFilePath => Path.Combine(GetLocalAppDataPath, APPNAMESPACE, GLOBAL_CONFIGURATION_FILENAME);
 
     /// <summary>
-    /// Embedded resource key to default podcast config (for init'ing new podcasts)
+    /// Full path to folder that stores registrations.
     /// </summary>
-    const string DEFAULT_PODCAST_CONFIG_FILE_KEY = "resources.podcast.json";
-
-    string GlobalConfigFilePath => Path.Combine(GetLocalAppDataPath, APPNAMESPACE, GLOBAL_CONFIGURATION_FILENAME);
+    /// <returns></returns>
     string PodcastRegistrationsPath => Path.Combine(GetLocalAppDataPath, APPNAMESPACE, PODCAST_REGISTRATIONS_FOLDER);
+
+    /// <summary>
+    /// Full path to the app's data folder. (~/Library/Application Support/{app namespace})
+    /// </summary>
+    /// <returns></returns>
     string AppDataPath => Path.Combine(GetLocalAppDataPath, APPNAMESPACE);
 
     // https://stackoverflow.com/questions/45255481/alternative-for-localAppDataPath-environment-variable-on-osx
+    /// <summary>
+    /// Full path to user's home directory. i.e. ~ expanded
+    /// </summary>
+    /// <returns></returns>
     string GetHomeDirPath => Environment.GetEnvironmentVariable("HOME") ?? "";
+
+    /// <summary>
+    /// Full path to user's Application Support folder. (~/Library/Application Support)
+    /// </summary>
+    /// <returns></returns>
     string GetLocalAppDataPath => Path.Combine(GetHomeDirPath, "Library", "Application Support");
 
+    /// <summary>
+    /// Full path to Apple Podcasts Sqlite database where podcast and episode metadata is stored.
+    /// </summary>
+    /// <returns></returns>
     public string ApplePodcastSqlitePath => Path.Combine(GetHomeDirPath, DEFAULT_APPLE_PODCAST_LOCATION, DEFAULT_APPLE_PODCAST_SQLITE);
+
+    /// <summary>
+    /// Full path to Apple Podcasts audio (mp3, etc) files.
+    /// </summary>
+    /// <returns></returns>
+    public string ApplePodcastAudioFilePath => Path.Combine(GetHomeDirPath, DEFAULT_APPLE_PODCAST_LOCATION, DEFAULT_APPLE_PODCAST_AUDIO);
 
     /// <summary>
     /// Checks whether our app config exists. Will create what is missing (if reasonable, otherwise throws)
@@ -187,7 +216,7 @@ public class ConfigManager
         {
             if (!_isRegistrationListLoaded || _isRegistrationCacheDirty)
             {
-                var files = Directory.GetFiles(PodcastRegistrationsPath, "*.json");
+                var files = Directory.GetFiles(PodcastRegistrationsPath, CONFIG_FILE_SEARCH_PATH);
 
                 _registrations = new List<Registration>();
 
@@ -204,6 +233,8 @@ public class ConfigManager
                     }
                 }
 
+                // Enrich our new collection of registrations as a batch.
+                // We didn't want to enrich above in the foreach loop to avoid multiple queries into Sqlite.
                 pm.EnrichRegistrations(_registrations).Wait();
 
                 _isRegistrationCacheDirty = false;
@@ -270,7 +301,11 @@ public class ConfigManager
     /// <returns></returns>
     public Registration? GetRegistration(string id)
     {
-        return Registrations?.Where(r => r.UniqueId.StartsWith(id, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+        var found = from reg in Registrations
+                    where reg.UniqueId.StartsWith(id, StringComparison.OrdinalIgnoreCase)
+                    select reg;
+
+        return found.FirstOrDefault();
     }
 
     /// <summary>
@@ -280,7 +315,10 @@ public class ConfigManager
     /// <returns></returns>
     public bool HasRegistration(string id)
     {
-        return Registrations.Where(r => r.UniqueId.StartsWith(id, StringComparison.OrdinalIgnoreCase)).Any();
+        var found = from reg in Registrations
+                    where reg.UniqueId.StartsWith(id, StringComparison.OrdinalIgnoreCase)
+                    select reg;
+        return found.Any();
     }
 
     /// <summary>
@@ -291,7 +329,15 @@ public class ConfigManager
     /// <returns></returns>
     public bool HasRegistration(string title, bool exact)
     {
-        return Registrations.Where(r => exact ? r.Title.Equals(title, StringComparison.OrdinalIgnoreCase) : r.Title.Contains(title, StringComparison.OrdinalIgnoreCase)).Any();
+        var found = from reg in Registrations
+                    where
+                    (
+                        (exact && reg.Title.Equals(title, StringComparison.OrdinalIgnoreCase)) ||
+                        (!exact && reg.Title.Contains(title, StringComparison.OrdinalIgnoreCase))
+                    )
+                    select reg;
+
+        return found.Any();
     }
 
     public IEnumerable<Registration> FindRegistrations(string title, bool exact = false)
@@ -301,9 +347,11 @@ public class ConfigManager
         return from reg in Registrations
                where
                !string.IsNullOrEmpty(reg.Title) &&
-               ((!exact && reg.Title.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)) || (exact && reg.Title.Equals(searchTerm, StringComparison.OrdinalIgnoreCase)))
+               (
+                   (!exact && reg.Title.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)) ||
+                    (exact && reg.Title.Equals(searchTerm, StringComparison.OrdinalIgnoreCase))
+                )
                select reg;
-
     }
 
 
