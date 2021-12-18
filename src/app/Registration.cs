@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using futura.Util;
 
 namespace futura.pod_dump;
 
@@ -7,6 +8,13 @@ public class Registration : IConfigDefault
 {
     public string Id { get; set; } = string.Empty;
     public string Title { get; set; } = string.Empty;
+
+    /// <summary>
+    /// SHA256 hash of Id + Title to ensure a unique identity.
+    /// </summary>
+    /// <returns></returns>
+    [JsonIgnore]
+    public string UniqueId => Hasher.ToSha256($"{Id}-{Title}");
 
     public DateTime? LastProcessed { get; set; }
 

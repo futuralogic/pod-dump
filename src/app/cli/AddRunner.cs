@@ -54,7 +54,7 @@ public static class AddRunner
         }
         else
         {
-            Out.Line("Found new podcasts to register:");
+            Out.Line($"Found {resultsToAdd.Count()} new podcasts to register:");
         }
 
         foreach (var found in resultsToAdd)
