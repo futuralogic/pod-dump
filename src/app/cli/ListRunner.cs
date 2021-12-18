@@ -33,10 +33,10 @@ public static class ListRunner
             Out.Line(HEADER_EXTENDED_RAW);
         }
 
-        var cfg = new ConfigManager();
+        var regman = new RegistrationManager();
 
         // Build PODCAST filter:
-        IEnumerable<Registration> query = cfg.Registrations;
+        IEnumerable<Registration> query = regman.Registrations;
         if (options.Pending)
         {
             query = query.Where(r => r.PendingEpisodes >= 1);

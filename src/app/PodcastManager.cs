@@ -8,6 +8,34 @@ public class PodcastManager
 {
 
     /// <summary>
+    /// Base path where Apple podcasts are stored
+    /// </summary>
+    const string DEFAULT_APPLE_PODCAST_LOCATION = "Library/Group Containers/243LU875E5.groups.com.apple.podcasts";
+
+    /// <summary>
+    /// Path where Apple stores its Sqlite db for podcast meta data.
+    /// </summary>
+    const string DEFAULT_APPLE_PODCAST_SQLITE = "Documents/MTLibrary.sqlite";
+
+    /// <summary>
+    /// Path where Apple stores the audio files once they're downloaded.
+    /// </summary>
+    const string DEFAULT_APPLE_PODCAST_AUDIO = "Library/Cache";
+
+    /// <summary>
+    /// Full path to Apple Podcasts Sqlite database where podcast and episode metadata is stored.
+    /// </summary>
+    /// <returns></returns>
+    string ApplePodcastSqlitePath => Path.Combine(AppConst.Paths.HomeDirPath, DEFAULT_APPLE_PODCAST_LOCATION, DEFAULT_APPLE_PODCAST_SQLITE);
+
+    /// <summary>
+    /// Full path to Apple Podcasts audio (mp3, etc) files.
+    /// </summary>
+    /// <returns></returns>
+    string ApplePodcastAudioFilePath => Path.Combine(AppConst.Paths.HomeDirPath, DEFAULT_APPLE_PODCAST_LOCATION, DEFAULT_APPLE_PODCAST_AUDIO);
+
+
+    /// <summary>
     /// Searches podcasts by podcast title.
     /// </summary>
     const string SQL_FIND_PODCASTS = "sql.find_podcasts.sql";
@@ -35,7 +63,7 @@ public class PodcastManager
     public async Task<IEnumerable<dynamic>> FindPodcast(string searchTerm, bool exact)
     {
         var cfg = new ConfigManager();
-        var cs = $"Data Source={cfg.ApplePodcastSqlitePath};Cache=Default;Mode=ReadOnly";
+        var cs = $"Data Source={ApplePodcastSqlitePath};Cache=Default;Mode=ReadOnly";
 
         //System.Diagnostics.Debug.WriteLine("cs: {0}", cs);
 
@@ -128,7 +156,7 @@ public class PodcastManager
     async Task<IEnumerable<dynamic>> GetEpisodeData(IEnumerable<Guid> podcastUUIds)
     {
         var cfg = new ConfigManager();
-        var cs = $"Data Source={cfg.ApplePodcastSqlitePath};Cache=Default;Mode=ReadOnly";
+        var cs = $"Data Source={ApplePodcastSqlitePath};Cache=Default;Mode=ReadOnly";
 
         //System.Diagnostics.Debug.WriteLine("cs: {0}", cs);
 
@@ -148,12 +176,12 @@ public class PodcastManager
             var result = await conn.QueryAsync<dynamic>(sql, queryParams);
 
             // Debug info if needed:
-            System.Diagnostics.Debug.WriteLine("row count: {0}", result.Count());
+            // System.Diagnostics.Debug.WriteLine("row count: {0}", result.Count());
 
-            foreach (var data in result)
-            {
-                Out.Line($"id:  {data.Episode} - {data.Url}");
-            }
+            // foreach (var data in result)
+            // {
+            //     Out.Line($"id:  {data.Episode} - {data.Url}");
+            // }
 
             return result;
 

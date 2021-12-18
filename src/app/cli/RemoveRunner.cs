@@ -3,14 +3,14 @@ public static class RemoveRunner
 {
     public static Task Execute(RemoveOptions options)
     {
-        var cfg = new ConfigManager();
+        var regman = new RegistrationManager();
 
-        if (cfg.HasRegistration(options.Id))
+        if (regman.HasRegistration(options.Id))
         {
             try
             {
-                var reg = cfg.GetRegistration(options.Id);
-                cfg.RemoveRegistration(options.Id);
+                var reg = regman.GetRegistration(options.Id);
+                regman.RemoveRegistration(options.Id);
                 Out.Line($"Registration for '{reg?.Title}' removed.");
             }
             catch (Exception problem)

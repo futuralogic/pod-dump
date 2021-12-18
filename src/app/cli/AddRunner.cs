@@ -5,13 +5,13 @@ public static class AddRunner
     public async static Task Execute(AddOptions options)
     {
 
-        var cfg = new ConfigManager();
+        var regman = new RegistrationManager();
 
         var searchTerm = options.Title;
         var isSearchExact = options.ExactMatch;
 
         // Check whether this podcast is already registered.
-        var reglist = cfg.FindRegistrations(searchTerm!, isSearchExact);
+        var reglist = regman.FindRegistrations(searchTerm!, isSearchExact);
         var regCount = reglist.Count();
 
         if (regCount > 0)
@@ -57,9 +57,11 @@ public static class AddRunner
             Out.Line($"Found {resultsToAdd.Count()} new podcasts to register:");
         }
 
+        var cfgman = new ConfigManager();
+
         foreach (var found in resultsToAdd)
         {
-            var newReg = new Registration(cfg.AppConfiguration);
+            var newReg = new Registration(cfgman.AppConfiguration);
 
             if (!string.IsNullOrEmpty(options.CustomTargetLocation))
             {
@@ -82,7 +84,7 @@ public static class AddRunner
             Out.Line($"Registering new: {found.Podcast}");
 
             // Write podcast meta file to registrations folder
-            await cfg.AddRegistration(newReg);
+            await regman.AddRegistration(newReg);
 
         }
 

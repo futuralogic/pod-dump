@@ -1,6 +1,4 @@
 
-using System.Runtime.InteropServices;
-//using System.Reflection;
 using System.Text.Json;
 
 namespace futura.pod_dump;
@@ -11,82 +9,42 @@ public class ConfigManager
 {
 
     /// <summary>
-    /// Directory.GetFiles search path for configuration files (JSON data)
+    /// Full path to global configuration file.
     /// </summary>
-    const string CONFIG_FILE_SEARCH_PATH = "*.json";
-
-    /// <summary>
-    /// Base path where Apple podcasts are stored
-    /// </summary>
-    const string DEFAULT_APPLE_PODCAST_LOCATION = "Library/Group Containers/243LU875E5.groups.com.apple.podcasts";
-
-    /// <summary>
-    /// Path where Apple stores its Sqlite db for podcast meta data.
-    /// </summary>
-    const string DEFAULT_APPLE_PODCAST_SQLITE = "Documents/MTLibrary.sqlite";
-
-    /// <summary>
-    /// Path where Apple stores the audio files once they're downloaded.
-    /// </summary>
-    const string DEFAULT_APPLE_PODCAST_AUDIO = "Library/Cache";
-
-    /// <summary>
-    /// Application namespace to use for saving config data.
-    /// </summary>
-    const string APPNAMESPACE = "com.futuralogic.pod-dump";
-
-    /// <summary>
-    /// Folder to save the collection of podcast registrations in.
-    /// </summary>
-    const string PODCAST_REGISTRATIONS_FOLDER = "registrations";
+    /// <returns></returns>
+    string GlobalConfigFilePath => Path.Combine(AppConst.Paths.AppDataPath, GLOBAL_CONFIGURATION_FILENAME);
 
     /// <summary>
     /// Default/global configuration file.
     /// </summary>
     const string GLOBAL_CONFIGURATION_FILENAME = "config.json";
 
-    /// <summary>
-    /// Full path to global configuration file.
-    /// </summary>
-    /// <returns></returns>
-    string GlobalConfigFilePath => Path.Combine(GetLocalAppDataPath, APPNAMESPACE, GLOBAL_CONFIGURATION_FILENAME);
+    bool _isGlobalConfigCacheDirty = false;
+
+    GlobalConfig? _globalConfigCached;
 
     /// <summary>
-    /// Full path to folder that stores registrations.
+    /// Global application configuration
     /// </summary>
-    /// <returns></returns>
-    string PodcastRegistrationsPath => Path.Combine(GetLocalAppDataPath, APPNAMESPACE, PODCAST_REGISTRATIONS_FOLDER);
-
-    /// <summary>
-    /// Full path to the app's data folder. (~/Library/Application Support/{app namespace})
-    /// </summary>
-    /// <returns></returns>
-    string AppDataPath => Path.Combine(GetLocalAppDataPath, APPNAMESPACE);
-
-    // https://stackoverflow.com/questions/45255481/alternative-for-localAppDataPath-environment-variable-on-osx
-    /// <summary>
-    /// Full path to user's home directory. i.e. ~ expanded
-    /// </summary>
-    /// <returns></returns>
-    string GetHomeDirPath => Environment.GetEnvironmentVariable("HOME") ?? "";
-
-    /// <summary>
-    /// Full path to user's Application Support folder. (~/Library/Application Support)
-    /// </summary>
-    /// <returns></returns>
-    string GetLocalAppDataPath => Path.Combine(GetHomeDirPath, "Library", "Application Support");
-
-    /// <summary>
-    /// Full path to Apple Podcasts Sqlite database where podcast and episode metadata is stored.
-    /// </summary>
-    /// <returns></returns>
-    public string ApplePodcastSqlitePath => Path.Combine(GetHomeDirPath, DEFAULT_APPLE_PODCAST_LOCATION, DEFAULT_APPLE_PODCAST_SQLITE);
-
-    /// <summary>
-    /// Full path to Apple Podcasts audio (mp3, etc) files.
-    /// </summary>
-    /// <returns></returns>
-    public string ApplePodcastAudioFilePath => Path.Combine(GetHomeDirPath, DEFAULT_APPLE_PODCAST_LOCATION, DEFAULT_APPLE_PODCAST_AUDIO);
+    /// <value></value>
+    public GlobalConfig AppConfiguration
+    {
+        get
+        {
+            if (_globalConfigCached == null || _isGlobalConfigCacheDirty)
+            {
+                var file = File.ReadAllText(GlobalConfigFilePath);
+                _globalConfigCached = JsonSerializer.Deserialize<GlobalConfig>(file);
+                _isGlobalConfigCacheDirty = false;
+            }
+            return _globalConfigCached!;
+        }
+        protected set
+        {
+            _globalConfigCached = value;
+            InvalidateGlobalConfig();
+        }
+    }
 
     /// <summary>
     /// Checks whether our app config exists. Will create what is missing (if reasonable, otherwise throws)
@@ -95,9 +53,9 @@ public class ConfigManager
     {
         // Check:
         // 1. app folder in Application Support
-        if (!Directory.Exists(AppDataPath))
+        if (!Directory.Exists(AppConst.Paths.AppDataPath))
         {
-            Directory.CreateDirectory(AppDataPath);
+            Directory.CreateDirectory(AppConst.Paths.AppDataPath);
         }
 
         // 2. global configuration file
@@ -106,11 +64,7 @@ public class ConfigManager
             await WriteDefaultGlobalConfig(GlobalConfigFilePath).ConfigureAwait(false);
         }
 
-        // 3. podcasts folder exists
-        if (!Directory.Exists(PodcastRegistrationsPath))
-        {
-            Directory.CreateDirectory(PodcastRegistrationsPath);
-        }
+        RegistrationManager.InitRegistrationConfig();
 
     }
 
@@ -141,6 +95,12 @@ public class ConfigManager
         await WriteGlobalConfig(configFilePath, baseconfig);
     }
 
+    /// <summary>
+    /// Write the newConfig object to the config path.
+    /// </summary>
+    /// <param name="configFilePath"></param>
+    /// <param name="newConfig"></param>
+    /// <returns></returns>
     async Task WriteGlobalConfig(string configFilePath, GlobalConfig newConfig)
     {
         try
@@ -166,193 +126,20 @@ public class ConfigManager
     /// </summary>
     public void CleanupApp()
     {
-        var appBase = AppDataPath;
+        var appBase = AppConst.Paths.AppDataPath;
         if (Directory.Exists(appBase))
         {
             Directory.Delete(appBase, true);
         }
     }
 
-    bool _isGlobalConfigCacheDirty = false;
 
+    /// <summary>
+    /// Invalidate the config cache.
+    /// </summary>
     void InvalidateGlobalConfig()
     {
         this._isGlobalConfigCacheDirty = true;
     }
-
-    GlobalConfig? _globalConfigCached;
-    public GlobalConfig AppConfiguration
-    {
-        get
-        {
-            if (_globalConfigCached == null || _isGlobalConfigCacheDirty)
-            {
-                var file = File.ReadAllText(GlobalConfigFilePath);
-                _globalConfigCached = JsonSerializer.Deserialize<GlobalConfig>(file);
-                _isGlobalConfigCacheDirty = false;
-            }
-            return _globalConfigCached!;
-        }
-        protected set
-        {
-            _globalConfigCached = value;
-            InvalidateGlobalConfig();
-        }
-    }
-
-    bool _isRegistrationCacheDirty = false;
-
-    void InvalidateRegistrationCache()
-    {
-        this._isRegistrationCacheDirty = true;
-    }
-
-    bool _isRegistrationListLoaded = false;
-    List<Registration> _registrations = new List<Registration>();
-
-    public List<Registration> Registrations
-    {
-        get
-        {
-            if (!_isRegistrationListLoaded || _isRegistrationCacheDirty)
-            {
-                var files = Directory.GetFiles(PodcastRegistrationsPath, CONFIG_FILE_SEARCH_PATH);
-
-                _registrations = new List<Registration>();
-
-                var pm = new PodcastManager();
-
-                foreach (var file in files)
-                {
-                    var fileText = File.ReadAllText(file);
-                    var reg = JsonSerializer.Deserialize<Registration>(fileText);
-                    if (reg != null)
-                    {
-                        reg.ConfigFilename = file;
-                        _registrations.Add(reg);
-                    }
-                }
-
-                // Enrich our new collection of registrations as a batch.
-                // We didn't want to enrich above in the foreach loop to avoid multiple queries into Sqlite.
-                pm.EnrichRegistrations(_registrations).Wait();
-
-                _isRegistrationCacheDirty = false;
-                _isRegistrationListLoaded = true;
-            }
-            return _registrations;
-        }
-        set
-        {
-            _registrations = value;
-            InvalidateRegistrationCache();
-        }
-    }
-
-    /// <summary>
-    /// Register's a podcast.
-    /// </summary>
-    /// <param name="id">Unique ID that associates us back to Apple's db</param>
-    /// <param name="title">Friendly title from podcast</param>
-    /// <param name="target">Custom target (if overridden), otherwise null</param>
-    /// <param name="relative">Custom relative sub-path (if overridden), otherwise null</param>
-    /// <param name="filename">Custom filenaming convention (if overridden), otherwise null</param>
-    public async Task AddRegistration(Registration add)
-    {
-        var fileName = add.ConfigFilename!;
-        var path = Path.Combine(PodcastRegistrationsPath, fileName);
-        var regString = JsonSerializer.Serialize(add);
-        await File.WriteAllTextAsync(path, regString);
-        InvalidateRegistrationCache();
-    }
-
-    /// <summary>
-    /// Updates custom settings of a podcast.
-    /// </summary>
-    /// <param name="target"></param>
-    /// <param name="relative"></param>
-    /// <param name="filename"></param>
-    public async Task UpdateRegistation(Registration update)
-    {
-        RemoveRegistration(update.UniqueId);
-        await AddRegistration(update);
-    }
-
-    public void RemoveRegistration(string id)
-    {
-        var reg = GetRegistration(id);
-        if (reg == null)
-        {
-            throw new Exception("Registration was unable to be retrieved by id.");
-        }
-        if (!File.Exists(reg.ConfigFilename))
-        {
-            throw new Exception("WARNING: The podcast registration file was not found.");
-        }
-
-        File.Delete(reg.ConfigFilename);
-
-        InvalidateRegistrationCache();
-    }
-
-    /// <summary>
-    /// Retrieve a podcast by its unique identifier
-    /// </summary>
-    /// <returns></returns>
-    public Registration? GetRegistration(string id)
-    {
-        var found = from reg in Registrations
-                    where reg.UniqueId.StartsWith(id, StringComparison.OrdinalIgnoreCase)
-                    select reg;
-
-        return found.FirstOrDefault();
-    }
-
-    /// <summary>
-    /// Returns whether the registration exists by unique id.
-    /// </summary>
-    /// <param name="id">Unique SHA256 hash of the registration.</param>
-    /// <returns></returns>
-    public bool HasRegistration(string id)
-    {
-        var found = from reg in Registrations
-                    where reg.UniqueId.StartsWith(id, StringComparison.OrdinalIgnoreCase)
-                    select reg;
-        return found.Any();
-    }
-
-    /// <summary>
-    /// Returns whether the registration exists by searching for it.
-    /// </summary>
-    /// <param name="title"></param>
-    /// <param name="exact"></param>
-    /// <returns></returns>
-    public bool HasRegistration(string title, bool exact)
-    {
-        var found = from reg in Registrations
-                    where
-                    (
-                        (exact && reg.Title.Equals(title, StringComparison.OrdinalIgnoreCase)) ||
-                        (!exact && reg.Title.Contains(title, StringComparison.OrdinalIgnoreCase))
-                    )
-                    select reg;
-
-        return found.Any();
-    }
-
-    public IEnumerable<Registration> FindRegistrations(string title, bool exact = false)
-    {
-        var searchTerm = title.ToLower();
-
-        return from reg in Registrations
-               where
-               !string.IsNullOrEmpty(reg.Title) &&
-               (
-                   (!exact && reg.Title.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)) ||
-                    (exact && reg.Title.Equals(searchTerm, StringComparison.OrdinalIgnoreCase))
-                )
-               select reg;
-    }
-
 
 }
