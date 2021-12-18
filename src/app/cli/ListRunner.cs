@@ -10,8 +10,12 @@ public static class ListRunner
     const string HEADER = "Podcast                                      Available     Last Processed     Target";
 
     const int ID_WIDTH = 7;
-
     const string HEADER_EXTENDED = "ID     Podcast                                      Available     Last Processed     Target";
+
+    const int CONFIG_WIDTH = 42;
+    const int ZUUID_WIDTH = 40;
+
+    const string HEADER_EXTENDED_RAW = "ID     Podcast                                      Config                                    ZUUID";
 
     public static Task Execute(ListOptions options)
     {
@@ -20,26 +24,35 @@ public static class ListRunner
 
     static Task RenderList(ListOptions options)
     {
-        Out.Line(options.ShowExtended ? HEADER_EXTENDED : HEADER);
+        if (!options.ShowRaw)
+        {
+            Out.Line(options.ShowExtended ? HEADER_EXTENDED : HEADER);
+        }
+        else
+        {
+            Out.Line(HEADER_EXTENDED_RAW);
+        }
 
         var cfg = new ConfigManager();
 
-        var hasAnyShown = false;
-
-        foreach (var reg in cfg.Registrations)
+        // Build PODCAST filter:
+        IEnumerable<Registration> query = cfg.Registrations;
+        if (options.Pending)
         {
-            // Find the number of episodes that need to be extracted since "LastProcessed"
-            var numberOfEpisodes = 0;
-            if (options.Pending && numberOfEpisodes == 0)
-            {
-                // Don't show a podcast if it doesn't have pending episodes
-                continue;
-            }
+            query = query.Where(r => r.PendingEpisodes >= 1);
+        }
+        // Add an order by podcast title.
+        query = query.OrderBy(r => r.Title);
 
-            // We have shown an entry.
-            hasAnyShown = true;
+        if (options.Pending && !query.Any())
+        {
+            Out.Text("No podcasts pending extraction.");
+        }
 
-            if (options.ShowExtended)
+        // Iterate:
+        foreach (var reg in query)
+        {
+            if (options.ShowExtended || options.ShowRaw)
             {
                 var idToFit = reg.UniqueId.Substring(0, 6).ToLower();
                 Out.Text(idToFit.PadRight(ID_WIDTH));
@@ -48,19 +61,27 @@ public static class ListRunner
             var titleToFit = reg.Title.Length > (TITLE_WIDTH - 4) ? $"{reg.Title.Substring(0, TITLE_WIDTH - 4)}..." : reg.Title;
             // TITLE
             Out.Text(titleToFit.PadRight(TITLE_WIDTH));
-            // AVAILABLE COUNT
-            Out.Text("2".PadRight(AVAILABLE_WIDTH));
-            // LAST PROCESSED DATE
-            // Calculate "relative" time for this date.
-            Out.Text("7 days ago".PadRight(LASTPROCESSED_WIDTH));
-            // EXTRACTION TARGET
-            Out.Text("{expanded_target_string}".PadRight(EXTRACT_WIDTH));
-            Out.Line("");
-        }
 
-        if (options.Pending && !hasAnyShown)
-        {
-            Out.Text("No podcasts pending extraction.");
+            if (!options.ShowRaw)
+            {
+                // AVAILABLE COUNT
+                Out.Text(reg.PendingEpisodes.ToString().PadRight(AVAILABLE_WIDTH));
+                // LAST PROCESSED DATE
+                var last = !string.IsNullOrEmpty(reg.LastProcessedText) ? reg.LastProcessedText.PadRight(LASTPROCESSED_WIDTH) : new string(' ', LASTPROCESSED_WIDTH);
+                Out.Text(last);
+                // EXTRACTION TARGET
+                Out.Text("{expanded_target_string}".PadRight(EXTRACT_WIDTH));
+            }
+            else
+            {
+                // CONFIG FILE NAME
+                Out.Text(Path.GetFileName(reg.ConfigFilename).PadRight(CONFIG_WIDTH));
+                // ZUUID
+                Out.Text(reg.Id.PadRight(ZUUID_WIDTH));
+
+            }
+
+            Out.Line("");
         }
 
         return Task.CompletedTask;

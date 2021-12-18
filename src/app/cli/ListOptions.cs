@@ -11,4 +11,7 @@ public class ListOptions
 
     [Option('x', "extended", HelpText = "Display additional registration details (such as ID - used to remove a registration).")]
     public bool ShowExtended { get; set; }
+
+    [Option("raw", Hidden = true, HelpText = "Show raw details.")]
+    public bool ShowRaw { get; set; }
 }

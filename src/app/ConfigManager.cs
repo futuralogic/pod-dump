@@ -197,6 +197,8 @@ public class ConfigManager
                     var reg = JsonSerializer.Deserialize<Registration>(fileText);
                     if (reg != null)
                     {
+                        reg.ConfigFilename = file;
+                        AddPodcastData(reg);
                         _registrations.Add(reg);
                     }
                 }
@@ -227,6 +229,7 @@ public class ConfigManager
         var path = Path.Combine(PodcastRegistrationsPath, fileName);
         var regString = JsonSerializer.Serialize(add);
         await File.WriteAllTextAsync(path, regString);
+        InvalidateRegistrationCache();
     }
 
     /// <summary>
@@ -235,14 +238,27 @@ public class ConfigManager
     /// <param name="target"></param>
     /// <param name="relative"></param>
     /// <param name="filename"></param>
-    public Task UpdateRegistation(Registration update)
+    public async Task UpdateRegistation(Registration update)
     {
-        return Task.CompletedTask;
+        RemoveRegistration(update.UniqueId);
+        await AddRegistration(update);
     }
 
     public void RemoveRegistration(string id)
     {
+        var reg = GetRegistration(id);
+        if (reg == null)
+        {
+            throw new Exception("Registration was unable to be retrieved by id.");
+        }
+        if (!File.Exists(reg.ConfigFilename))
+        {
+            throw new Exception("WARNING: The podcast registration file was not found.");
+        }
 
+        File.Delete(reg.ConfigFilename);
+
+        InvalidateRegistrationCache();
     }
 
     /// <summary>
@@ -251,10 +267,26 @@ public class ConfigManager
     /// <returns></returns>
     public Registration? GetRegistration(string id)
     {
-        return Registrations?.Where(r => r.Id.Equals(id, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+        return Registrations?.Where(r => r.UniqueId.StartsWith(id, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
     }
 
-    public bool HasRegistration(string title, bool exact = false)
+    /// <summary>
+    /// Returns whether the registration exists by unique id.
+    /// </summary>
+    /// <param name="id">Unique SHA256 hash of the registration.</param>
+    /// <returns></returns>
+    public bool HasRegistration(string id)
+    {
+        return Registrations.Where(r => r.UniqueId.StartsWith(id, StringComparison.OrdinalIgnoreCase)).Any();
+    }
+
+    /// <summary>
+    /// Returns whether the registration exists by searching for it.
+    /// </summary>
+    /// <param name="title"></param>
+    /// <param name="exact"></param>
+    /// <returns></returns>
+    public bool HasRegistration(string title, bool exact)
     {
         return Registrations.Where(r => exact ? r.Title.Equals(title, StringComparison.OrdinalIgnoreCase) : r.Title.Contains(title, StringComparison.OrdinalIgnoreCase)).Any();
     }
@@ -269,5 +301,11 @@ public class ConfigManager
                ((!exact && reg.Title.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)) || (exact && reg.Title.Equals(searchTerm, StringComparison.OrdinalIgnoreCase)))
                select reg;
 
+    }
+
+    void AddPodcastData(Registration registration)
+    {
+        registration.PendingEpisodes = 0;
+        registration.LastProcessedText = null;
     }
 }
