@@ -26,7 +26,7 @@ public class Registration : IConfigDefault
     /// </summary>
     /// <value></value>
     [JsonIgnore]
-    public string? ConfigFilename { get; set; } = NewConfigFilename;
+    public string ConfigFilename { get; set; } = NewConfigFilename;
 
     /// <summary>
     /// SHA256 hash of Id + Title to ensure a unique identity.
