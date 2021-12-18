@@ -1,4 +1,5 @@
 SELECT
+    p.ZUUID As Id,
 	p.ZAUTHOR,
 	p.ZTITLE As Podcast,
 	e.ZEPISODENUMBER As EpisodeNumber,
@@ -6,12 +7,12 @@ SELECT
 	e.ZPUBDATE,
 	e.ZIMPORTDATE,
 	e.ZMETADATATIMESTAMP,
-	e.ZASSETURL
+	e.ZASSETURL As Url
 from ZMTEPISODE e
 join ZMTPODCAST p
     on e.ZPODCASTUUID = p.ZUUID
 where
 	e.ZASSETURL IS NOT NULL
 	AND e.ZASSETURL LIKE '%Container%'
-    AND p.ZTITLE LIKE '%hardcore%'
-order by e.ZPUBDATE;
+    AND p.ZUUID IN @Ids
+order by p.ZUUID, e.ZPUBDATE DESC;

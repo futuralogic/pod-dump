@@ -19,6 +19,12 @@ public class Registration : IConfigDefault
     public int PendingEpisodes { get; set; } = 0;
 
     [JsonIgnore]
+    public DateTime? EarliestPodcastDate { get; set; }
+
+    [JsonIgnore]
+    public DateTime? NewestPodcastDate { get; set; }
+
+    [JsonIgnore]
     public string? LastProcessedText { get; set; }
 
     /// <summary>

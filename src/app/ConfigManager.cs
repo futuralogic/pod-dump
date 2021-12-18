@@ -191,6 +191,8 @@ public class ConfigManager
 
                 _registrations = new List<Registration>();
 
+                var pm = new PodcastManager();
+
                 foreach (var file in files)
                 {
                     var fileText = File.ReadAllText(file);
@@ -198,10 +200,11 @@ public class ConfigManager
                     if (reg != null)
                     {
                         reg.ConfigFilename = file;
-                        AddPodcastData(reg);
                         _registrations.Add(reg);
                     }
                 }
+
+                pm.EnrichRegistrations(_registrations).Wait();
 
                 _isRegistrationCacheDirty = false;
                 _isRegistrationListLoaded = true;
@@ -303,9 +306,5 @@ public class ConfigManager
 
     }
 
-    void AddPodcastData(Registration registration)
-    {
-        registration.PendingEpisodes = 0;
-        registration.LastProcessedText = null;
-    }
+
 }
