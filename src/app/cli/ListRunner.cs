@@ -48,6 +48,7 @@ public static class ListRunner
         if (!options.ShowAll && !query.Any())
         {
             Out.Text("No podcasts pending extraction.");
+            return Task.CompletedTask;
         }
 
         // Iterate:
