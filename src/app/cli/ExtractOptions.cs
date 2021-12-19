@@ -5,4 +5,6 @@ namespace futura.pod_dump;
 public class ExtractOptions
 {
 
+    [Option("whatif", HelpText = "Display a summary of what would happen if extraction occurred.")]
+    public bool WhatIf { get; set; }
 }

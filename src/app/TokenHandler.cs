@@ -1,13 +1,38 @@
+using System.Text;
+using System.Reflection;
+
 namespace futura.pod_dump;
-public class TokenHandler
+public static class TokenHandler
 {
-    object? _model = null;
 
-    public TokenHandler(object model)
+    /// <summary>
+    /// Given a tokenized string and a data model return a parsed string with tokens replaced with values from the model.
+    /// </summary>
+    /// <param name="tokenized"></param>
+    /// <param name="model"></param>
+    /// <returns></returns>
+    public static string ParseTokenizedString(string tokenized, TokenMeta model)
     {
-        _model = model;
-    }
+        string working = tokenized;
 
+        Type TM = typeof(TokenMeta);
+
+        foreach (var prop in TM.GetProperties())
+        {
+            var tokenAttr = prop.GetCustomAttribute<TokenAttribute>();
+            if (tokenAttr != null)
+            {
+                var findString = tokenAttr.TokenKey;
+                var val = prop.GetValue(model) as string;
+
+                working = working.Replace($"{{{findString}}}", val);
+            }
+        }
+
+        // Replace any additional
+
+        return working;
+    }
 
     /*
 |Token|Description|

@@ -125,14 +125,27 @@ public class PodcastManager
     /// <param name="podcastData">Collection of episodes for the given podcast.</param>
     public void EnrichRegistration(Registration registration, IEnumerable<dynamic> podcastData)
     {
+        var pendingEpisodes = GetPendingEpisodes(registration.Uuid, registration.LastProcessed, podcastData);
+        registration.PendingEpisodes = pendingEpisodes.Count();
+    }
+
+    /// <summary>
+    /// Given a collection of podcast episodes, return the list of episodes that are pending since a given date.
+    /// </summary>
+    /// <param name="podcastUUId"></param>
+    /// <param name="sinceDate"></param>
+    /// <param name="podcastData"></param>
+    /// <returns></returns>
+    public IEnumerable<dynamic> GetPendingEpisodes(Guid podcastUUId, DateTime? sinceDate, IEnumerable<dynamic> podcastData)
+    {
         var episodes = from podcast in podcastData
                        where
-                           Guid.Parse(podcast.PodcastUUId) == registration.Uuid
-                           && ((registration.LastProcessed.HasValue && DateTime.Parse(podcast.EpisodePubDate) > registration.LastProcessed.Value)
-                            || !registration.LastProcessed.HasValue)
+                           Guid.Parse(podcast.PodcastUUId) == podcastUUId
+                           && ((sinceDate.HasValue && DateTime.Parse(podcast.EpisodePubDate) > sinceDate.Value)
+                            || !sinceDate.HasValue)
                        select podcast;
 
-        registration.PendingEpisodes = episodes.Count();
+        return episodes;
     }
 
     /// <summary>
@@ -151,7 +164,7 @@ public class PodcastManager
     /// </summary>
     /// <param name="podcastUUIds"></param>
     /// <returns></returns>
-    async Task<IEnumerable<dynamic>> GetEpisodeData(IEnumerable<Guid> podcastUUIds)
+    public async Task<IEnumerable<dynamic>> GetEpisodeData(IEnumerable<Guid> podcastUUIds)
     {
         var cs = $"Data Source={ApplePodcastSqlitePath};Cache=Default;Mode=ReadOnly";
 
