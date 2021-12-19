@@ -73,7 +73,7 @@ public static class ListRunner
                 Out.Text(last);
 
                 // EXTRACTION TARGET
-                Out.Text("{expanded_target_string}".PadRight(EXTRACT_WIDTH));
+                Out.Text($"{reg.ExtractionTargetTokenized}".PadRight(EXTRACT_WIDTH));
             }
             else
             {

@@ -24,6 +24,22 @@ public class Registration : IConfigDefault
     public string? FilenameConvention { get; set; }
 
     [JsonIgnore]
+    public string ExtractionTargetTokenized
+    {
+        get
+        {
+            // show TARGET/REL/FILE FORMAT
+            var cfg = new ConfigManager();
+            var g = cfg.AppConfiguration;
+
+            var extractionTarget = TargetLocation! ?? (string)g.TargetLocation!;
+            extractionTarget = Path.Combine(extractionTarget, RelativeLocation ?? (string)g.RelativeLocation!);
+            extractionTarget = Path.Combine(extractionTarget, FilenameConvention ?? (string)g.FilenameConvention!);
+            return extractionTarget;
+        }
+    }
+
+    [JsonIgnore]
     public int PendingEpisodes { get; set; } = 0;
 
     [JsonIgnore]
