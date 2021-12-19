@@ -10,7 +10,7 @@ static class DateExtensions
 
     public static string RelativeTo(this DateTime theDate, DateTime toDate)
     {
-        var ts = new TimeSpan(theDate.ToUniversalTime().Ticks - toDate.ToUniversalTime().Ticks);
+        var ts = new TimeSpan(toDate.ToUniversalTime().Ticks - theDate.ToUniversalTime().Ticks);
         double delta = Math.Abs(ts.TotalSeconds);
 
         if (delta < 1 * MINUTE)
