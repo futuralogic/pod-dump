@@ -23,9 +23,8 @@ public static class TokenHandler
             if (tokenAttr != null)
             {
                 var findString = tokenAttr.TokenKey;
-                var val = prop.GetValue(model) as string;
-
-                working = working.Replace($"{{{findString}}}", val);
+                var val = prop.GetValue(model) as string ?? "";
+                working = working.Replace($"{{{findString}}}", val.Replace("/", "-").Replace("\\", "-").Replace("#", "").Replace(":", "-"));
             }
         }
 

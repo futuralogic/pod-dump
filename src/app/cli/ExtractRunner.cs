@@ -27,10 +27,11 @@ public static class ExtractRunner
         var pm = new PodcastManager();
 
         // Retrieve ALL episodes we have registrations for.
-        var podcastsWithRegistration = await pm.GetEpisodeData(query.Select(r => r.Uuid));
+        var podcastsWithRegistration = (await pm.GetEpisodeData(query.Select(r => r.Uuid))).ToList();
 
         // Iterate:
-        foreach (var reg in query)
+        var registrationsToProcess = query.ToList();
+        foreach (var reg in registrationsToProcess)
         {
 
             Out.Line($"{reg.Title} - {reg.PendingEpisodes} episodes");
@@ -41,10 +42,9 @@ public static class ExtractRunner
             foreach (var ep in episodes)
             {
 
-                Out.Line($"   Episode: {ep.Episode}");
+                Out.Line($"  Episode: {ep.Episode}");
 
                 // Determine extraction location
-                Out.Line("DEBUG: Generate extraction location");
                 var targetTokenized = reg.ExtractionTargetTokenized;
 
                 DateTime epPubDate = DateTime.Parse(ep.EpisodePubDate);
@@ -57,29 +57,55 @@ public static class ExtractRunner
                     FileExtension = "mp3", // TODO: Need to fix
                     PublishedYear = epPubDate.Year,
                     PublishedMonth = epPubDate.Month,
-                    PublishedDay = epPubDate.Day
+                    PublishedDay = epPubDate.Day,
+                    Author = ep.AUTHOR
                 };
 
                 var targetFinal = TokenHandler.ParseTokenizedString(targetTokenized, data);
 
-                System.Diagnostics.Debug.WriteLine($"Target: {targetFinal}");
+                // Extract
+                var source = new Uri(ep.Url).LocalPath;
+                var dest = targetFinal;
+
+                System.Diagnostics.Debug.WriteLine($"  > Source: {source}");
+                System.Diagnostics.Debug.WriteLine($"  > Dest: {dest}");
+
+
+                if (File.Exists(dest))
+                {
+                    Out.Line($"   > Target already exists. Not overwriting. (Target: {dest})");
+                }
 
                 if (!options.WhatIf)
                 {
-                    // Extract
-                    Out.Line("DEBUG: Extract (i.e. copy to target) - ");
+                    if (!File.Exists(dest))
+                    {
+                        var path = Path.GetDirectoryName(dest);
+                        System.Diagnostics.Debug.WriteLine($"   > Creating dir to {path}");
+                        Directory.CreateDirectory(path);
+                        File.Copy(source, dest);
+                        System.Diagnostics.Debug.WriteLine($"   > Copy complete.");
+
+                        // TODO: Tag resulting audio file.
+                        Out.Line("DEBUG: Tag target audio file.");
+                    }
                 }
                 else
                 {
-                    Out.Line("--whatif specified. Skipping actual extraction.");
+                    Out.Line("   > --whatif specified. Skipping actual extraction.");
+                    Out.Line($"   > Source: {source}");
+                    Out.Line($"   > Dest: {dest}");
+
                 }
 
             }
 
             if (!options.WhatIf)
             {
-                Out.Line("DEBUG: Update registration LastProcessed");
+                reg.LastProcessed = DateTime.Now;
+                await regman.UpdateRegistation(reg);
             }
+
             Out.Line("");
         }
 
