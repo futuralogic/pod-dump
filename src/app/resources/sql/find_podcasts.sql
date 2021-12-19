@@ -1,5 +1,5 @@
 SELECT
-    p.ZUUID As Id,
+    p.ZUUID As PodcastUUId,
 	p.ZAUTHOR As Author,
 	p.ZTITLE As Podcast
 FROM ZMTPODCAST p

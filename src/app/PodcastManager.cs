@@ -114,7 +114,7 @@ public class PodcastManager
         //await LoadSqlPodcastData(registrations);
         foreach (var reg in registrations)
         {
-            EnrichRegistration(reg, podcastData.Where(p => reg.Uuid.ToString().Equals(p.Id, StringComparison.OrdinalIgnoreCase)));
+            EnrichRegistration(reg, podcastData.Where(p => reg.Uuid.ToString().Equals(p.PodcastUUId, StringComparison.OrdinalIgnoreCase)));
         }
     }
 
@@ -127,11 +127,12 @@ public class PodcastManager
     {
         var episodes = from podcast in podcastData
                        where
-                           Guid.Parse(podcast.Id) == registration.Uuid
+                           Guid.Parse(podcast.PodcastUUId) == registration.Uuid
+                           && ((registration.LastProcessed.HasValue && DateTime.Parse(podcast.EpisodePubDate) > registration.LastProcessed.Value)
+                            || !registration.LastProcessed.HasValue)
                        select podcast;
 
         registration.PendingEpisodes = episodes.Count();
-        registration.LastProcessedText = null;
     }
 
     /// <summary>
