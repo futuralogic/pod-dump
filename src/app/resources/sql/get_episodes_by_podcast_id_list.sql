@@ -25,4 +25,4 @@ WHERE
     AND p.ZUUID IN @Ids
 ORDER BY
     p.ZTITLE,
-    e.ZPUBDATE DESC;
+    e.ZPUBDATE;
