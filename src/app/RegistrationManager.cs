@@ -58,13 +58,31 @@ public class RegistrationManager
                     if (reg != null)
                     {
                         reg.ConfigFilename = file;
+                        if (reg.LastProcessed.HasValue)
+                        {
+                            reg.LastProcessedText = reg.LastProcessed.Value.RelativeTo(DateTime.Now);
+                        }
+                        else
+                        {
+                            reg.LastProcessedText = "never";
+                        }
                         _registrations.Add(reg);
                     }
                 }
 
-                // Enrich our new collection of registrations as a batch.
-                // We didn't want to enrich above in the foreach loop to avoid multiple queries into Sqlite.
-                pm.EnrichRegistrations(_registrations).Wait();
+                try
+                {
+
+                    // Enrich our new collection of registrations as a batch.
+                    // We didn't want to enrich above in the foreach loop to avoid multiple queries into Sqlite.
+                    pm.EnrichRegistrations(_registrations).Wait();
+                }
+                catch (Exception enrichment)
+                {
+                    Out.Line($"Error enriching registrations with podcast data: {enrichment.Message}");
+                    throw;
+                }
+
 
                 _isRegistrationCacheDirty = false;
                 _isRegistrationListLoaded = true;
