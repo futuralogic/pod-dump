@@ -37,6 +37,7 @@ public static class ListRunner
 
         // Build PODCAST filter:
         IEnumerable<Registration> query = regman.Registrations;
+
         if (!options.ShowAll)
         {
             query = query.Where(r => r.PendingEpisodes >= 1);
@@ -66,18 +67,21 @@ public static class ListRunner
             {
                 // AVAILABLE COUNT
                 Out.Text(reg.PendingEpisodes.ToString().PadRight(AVAILABLE_WIDTH));
+
                 // LAST PROCESSED DATE
                 var last = !string.IsNullOrEmpty(reg.LastProcessedText) ? reg.LastProcessedText.PadRight(LASTPROCESSED_WIDTH) : new string(' ', LASTPROCESSED_WIDTH);
                 Out.Text(last);
+
                 // EXTRACTION TARGET
                 Out.Text("{expanded_target_string}".PadRight(EXTRACT_WIDTH));
             }
             else
             {
+
                 // CONFIG FILE NAME
                 Out.Text(Path.GetFileName(reg.ConfigFilename).PadRight(CONFIG_WIDTH));
-                // ZUUID
 
+                // ZUUID
                 var uuid = reg.Uuid.ToString();
                 Out.Text(uuid.PadRight(ZUUID_WIDTH));
 
