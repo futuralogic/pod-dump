@@ -40,7 +40,7 @@ public static class ListRunner
 
         if (!options.ShowAll)
         {
-            query = query.Where(r => r.PendingEpisodes >= 1);
+            query = query.Where(r => r.PendingEpisodes > 0);
         }
         // Add an order by podcast title.
         query = query.OrderBy(r => r.Title);
