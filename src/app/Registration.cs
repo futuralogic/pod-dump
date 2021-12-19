@@ -55,20 +55,4 @@ public class Registration : IConfigDefault
     /// <returns></returns>
     public static string NewConfigFilename => $"{System.Guid.NewGuid()}.json";
 
-    public Registration()
-    {
-
-    }
-
-    public Registration(GlobalConfig globalConfig)
-    {
-        var reg = new Registration
-        {
-            TargetLocation = globalConfig.TargetLocation,
-            RelativeLocation = globalConfig.RelativeLocation,
-            FilenameConvention = globalConfig.FilenameConvention
-        };
-    }
-
-
 }

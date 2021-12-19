@@ -61,7 +61,7 @@ public static class AddRunner
 
         foreach (var found in resultsToAdd)
         {
-            var newReg = new Registration(cfgman.AppConfiguration);
+            var newReg = new Registration();
 
             if (!string.IsNullOrEmpty(options.CustomTargetLocation))
             {
