@@ -1,15 +1,15 @@
 namespace futura.pod_dump;
 public class TokenHandler
 {
-	object? _model = null;
+    object? _model = null;
 
-	public TokenHandler(object model)
-	{
-		_model = model;
-	}
+    public TokenHandler(object model)
+    {
+        _model = model;
+    }
 
 
-	/*
+    /*
 |Token|Description|
 |---|---|
 |{podcast}|Podcast title (ex: This American Life)|
