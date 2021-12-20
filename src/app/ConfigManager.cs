@@ -119,6 +119,16 @@ public class ConfigManager
     }
 
     /// <summary>
+    /// Given a global config, save it, overwriting what already exists.
+    /// </summary>
+    /// <param name="config"></param>
+    /// <returns></returns>
+    public async Task SaveGlobalConfig(GlobalConfig config)
+    {
+        await WriteGlobalConfig(GlobalConfigFilePath, config);
+    }
+
+    /// <summary>
     /// Removes the entire app folder from Application Support. No UI surface at this time.
     /// </summary>
     public static void CleanupApp()
