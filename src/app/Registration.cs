@@ -57,7 +57,7 @@ public class Registration : IConfigDefault
     /// </summary>
     /// <returns></returns>
     [JsonIgnore]
-    public string UniqueId => Hasher.ToSha256($"{ConfigFilename}-{Title}");
+    public string UniqueId => new Hasher().ToSha256($"{ConfigFilename}-{Title}");
 
     /// <summary>
     /// Centrally manage config file naming scheme.

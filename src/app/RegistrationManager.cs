@@ -1,4 +1,6 @@
+using System.Text;
 using System.Text.Json;
+using futura.Util;
 
 namespace futura.pod_dump;
 
@@ -47,9 +49,8 @@ public class RegistrationManager
             {
                 var files = Directory.GetFiles(PodcastRegistrationsPath, CONFIG_FILE_SEARCH_PATH);
 
+                //Out.Line("DEBUG: Clearing out underlying list of registrations during lazy load.");
                 _registrations = new List<Registration>();
-
-                var pm = new PodcastManager();
 
                 foreach (var file in files)
                 {
@@ -57,7 +58,7 @@ public class RegistrationManager
                     var reg = JsonSerializer.Deserialize<Registration>(fileText);
                     if (reg != null)
                     {
-                        reg.ConfigFilename = file;
+                        reg.ConfigFilename = Path.GetFileName(file);
                         if (reg.LastProcessed.HasValue)
                         {
                             reg.LastProcessedText = reg.LastProcessed.Value.RelativeTo(DateTime.Now);
@@ -69,6 +70,8 @@ public class RegistrationManager
                         _registrations.Add(reg);
                     }
                 }
+
+                var pm = new PodcastManager();
 
                 try
                 {
@@ -87,6 +90,8 @@ public class RegistrationManager
                 _isRegistrationCacheDirty = false;
                 _isRegistrationListLoaded = true;
             }
+
+            //Out.Line("DEBUG: Returning registrations");
             return _registrations;
         }
         set
@@ -108,34 +113,81 @@ public class RegistrationManager
         }
     }
 
+    public void SaveRegistrationConfigs()
+    {
+        foreach (var reg in _registrations)
+        {
+            try
+            {
+
+                var fileName = reg.ConfigFilename!;
+                var path = Path.Combine(PodcastRegistrationsPath, fileName);
+
+                // Serialize the current regisration object.
+                var regString = JsonSerializer.Serialize(reg);
+
+                // New or changed = FALSE (i.e. write file)
+                // Same config = TRUE (don't update file)
+                var configIsSame = false;
+
+                if (File.Exists(path))
+                {
+                    var existingConfig = File.ReadAllText(path);
+                    var hsh = new Hasher();
+                    var hash_new = hsh.ToSha256(regString);
+                    var hash_old = hsh.ToSha256(existingConfig);
+
+                    if (hash_new == hash_old)
+                    {
+                        //Out.Line($"DEBUG: Config SAME for {reg.Title}");
+                        configIsSame = true;
+                    }
+                    else
+                    {
+                        //Out.Line($"DEBUG: Deleting config for {reg.Title}");
+                        File.Delete(path);
+                    }
+                }
+
+                if (!configIsSame)
+                {
+                    //Out.Line($"DEBUG: Writing config for {reg.Title}");
+                    File.WriteAllText(path, regString);
+                }
+
+            }
+            catch (Exception saveProblem)
+            {
+                Out.Line($"Problem saving configs: {saveProblem.Message}");
+                Out.Line(saveProblem.ToString());
+                throw;
+            }
+        }
+    }
+
     /// <summary>
     /// Register's a podcast.
     /// </summary>
-    /// <param name="id">Unique ID that associates us back to Apple's db</param>
-    /// <param name="title">Friendly title from podcast</param>
-    /// <param name="target">Custom target (if overridden), otherwise null</param>
-    /// <param name="relative">Custom relative sub-path (if overridden), otherwise null</param>
-    /// <param name="filename">Custom filenaming convention (if overridden), otherwise null</param>
+    /// <param name="ad">Registration object</param>
     public async Task AddRegistration(Registration add)
     {
         var fileName = add.ConfigFilename!;
         var path = Path.Combine(PodcastRegistrationsPath, fileName);
         var regString = JsonSerializer.Serialize(add);
         await File.WriteAllTextAsync(path, regString);
-        InvalidateRegistrationCache();
+        _registrations.Add(add);
     }
 
     /// <summary>
-    /// Updates custom settings of a podcast.
+    /// Updates custom settings of a podcast. Does not persist to disk. Call SaveRegistrationConfigs() to do that.
     /// </summary>
-    /// <param name="target"></param>
-    /// <param name="relative"></param>
-    /// <param name="filename"></param>
-    public async Task UpdateRegistation(Registration update)
+    /// <param name="update">Registration object</param>
+    public void UpdateRegistation(Registration update)
     {
-        RemoveRegistration(update.UniqueId);
-        await AddRegistration(update);
-        InvalidateRegistrationCache();
+        var idx = _registrations.IndexOf(update);
+        //Out.Line($"DEBUG: INDEX: {idx}");
+        _registrations[idx] = update;
+        //Out.Line($"DEBUG: Last Processed: {_registrations[idx].LastProcessed}");
     }
 
     public void RemoveRegistration(string id)
@@ -145,14 +197,14 @@ public class RegistrationManager
         {
             throw new Exception("Registration was unable to be retrieved by id.");
         }
-        if (!File.Exists(reg.ConfigFilename))
+        var path = Path.Combine(PodcastRegistrationsPath, reg.ConfigFilename);
+        if (!File.Exists(path))
         {
             throw new Exception("WARNING: The podcast registration file was not found.");
         }
 
-        File.Delete(reg.ConfigFilename);
-
-        InvalidateRegistrationCache();
+        File.Delete(path);
+        _registrations.Remove(reg);
     }
 
     /// <summary>

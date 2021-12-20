@@ -12,9 +12,6 @@ public static class ExtractRunner
 
         query = query.Where(r => r.PendingEpisodes > 0);
 
-        // Add an order by podcast title.
-        query = query.OrderBy(r => r.Title);
-
         if (!query.Any())
         {
             Out.Text("No podcasts pending extraction.");
@@ -26,13 +23,17 @@ public static class ExtractRunner
 
         var pm = new PodcastManager();
 
-        // Retrieve ALL episodes we have registrations for.
+        // Retrieve ALL podcast episodes for podcasts we have registrations for.
+        // Pass in our list of Podcast UUId's and retrieve the list of episodes from Sqlite:
         var podcastsWithRegistration = (await pm.GetEpisodeData(query.Select(r => r.Uuid))).ToList();
 
+        // Add an order by podcast title.
+        query = query.OrderBy(r => r.Title);
+
         // Iterate:
-        var registrationsToProcess = query.ToList();
-        foreach (var reg in registrationsToProcess)
+        foreach (var reg in query.ToList())
         {
+            //Out.Line($"DEBUG: reg count: {registrationsToProcess.Count()}");
 
             Out.Line($"{reg.Title} - {reg.PendingEpisodes} episodes");
 
@@ -49,27 +50,25 @@ public static class ExtractRunner
 
                 DateTime epPubDate = DateTime.Parse(ep.EpisodePubDate);
 
+                // Extract
+                var source = new Uri(ep.Url).LocalPath;
+
                 var data = new TokenMeta
                 {
                     PodcastTitle = reg.Title,
                     EpisodeTitle = ep.Episode,
                     EpisodeNumber = Convert.ToString(ep.EpisodeNumber),
-                    FileExtension = "mp3", // TODO: Need to fix
+                    FileExtension = Path.GetExtension(source),
                     PublishedYear = epPubDate.Year,
                     PublishedMonth = epPubDate.Month,
                     PublishedDay = epPubDate.Day,
-                    Author = ep.AUTHOR
+                    Author = ep.Author
                 };
 
-                var targetFinal = TokenHandler.ParseTokenizedString(targetTokenized, data);
-
-                // Extract
-                var source = new Uri(ep.Url).LocalPath;
-                var dest = targetFinal;
+                var dest = TokenHandler.ParseTokenizedString(targetTokenized, data);
 
                 System.Diagnostics.Debug.WriteLine($"  > Source: {source}");
                 System.Diagnostics.Debug.WriteLine($"  > Dest: {dest}");
-
 
                 if (File.Exists(dest))
                 {
@@ -80,33 +79,76 @@ public static class ExtractRunner
                 {
                     if (!File.Exists(dest))
                     {
-                        var path = Path.GetDirectoryName(dest);
-                        System.Diagnostics.Debug.WriteLine($"   > Creating dir to {path}");
-                        Directory.CreateDirectory(path);
-                        File.Copy(source, dest);
-                        System.Diagnostics.Debug.WriteLine($"   > Copy complete.");
 
-                        // TODO: Tag resulting audio file.
-                        Out.Line("DEBUG: Tag target audio file.");
+                        var path = Path.GetDirectoryName(dest);
+
+                        // ***************************************************************
+                        // DIRECTORY CREATE + FILE COPY
+                        System.Diagnostics.Debug.WriteLine($"   > Creating dir to {path}");
+
+                        Directory.CreateDirectory(path!);
+                        File.Copy(source, dest);
+
+                        System.Diagnostics.Debug.WriteLine($"   > Copy complete.");
+                        // ***************************************************************
+
+                        var tagFile = TagLib.File.Create(dest);
+
+                        tagFile.Tag.AlbumArtists = new string[] { data.Author };
+                        tagFile.Tag.Performers = new string[] { data.Author };
+
+                        tagFile.Tag.Album = data.PodcastTitle;
+                        tagFile.Tag.Title = data.EpisodeTitle;
+
+                        tagFile.Tag.DateTagged = DateTime.Now;
+
+                        tagFile.Tag.Year = Convert.ToUInt16(epPubDate.Year);
+
+                        if (!string.IsNullOrEmpty(data.EpisodeNumber) && data.EpisodeNumber.Trim() != "0")
+                        {
+                            tagFile.Tag.Track = Convert.ToUInt16(data.EpisodeNumber);
+                        }
+
+                        tagFile.Save();
+
+                        System.Diagnostics.Debug.WriteLine($"   > Tagging complete.");
+
                     }
+
                 }
                 else
                 {
                     Out.Line("   > --whatif specified. Skipping actual extraction.");
                     Out.Line($"   > Source: {source}");
                     Out.Line($"   > Dest: {dest}");
-
+                    Out.Line($"   > Tags:");
+                    Out.Line($"         - Album Artist: {data.Author}");
+                    Out.Line($"         - Artist: {data.Author}");
+                    Out.Line($"         - Album: {data.PodcastTitle}");
+                    Out.Line($"         - Title: {data.EpisodeTitle}");
+                    Out.Line($"         - Year: {epPubDate.Year}");
+                    if (!string.IsNullOrEmpty(data.EpisodeNumber) && data.EpisodeNumber.Trim() != "0")
+                    {
+                        Out.Line($"         - Track #: {Convert.ToUInt16(data.EpisodeNumber)}");
+                    }
                 }
-
             }
 
             if (!options.WhatIf)
             {
                 reg.LastProcessed = DateTime.Now;
-                await regman.UpdateRegistation(reg);
+                regman.UpdateRegistation(reg);
+                System.Diagnostics.Debug.WriteLine($"   > Updated last processed date.");
             }
 
             Out.Line("");
+        }
+
+        if (!options.WhatIf)
+        {
+            // Update configs in filesystem to record the extraction.
+            regman.SaveRegistrationConfigs();
+            System.Diagnostics.Debug.WriteLine($"Registration configs have been updated.");
         }
 
         Out.Line("Extraction complete.");

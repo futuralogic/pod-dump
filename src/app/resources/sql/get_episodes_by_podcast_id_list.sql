@@ -2,9 +2,9 @@
 SELECT
     p.ZUUID As PodcastUUId,
 	e.ZEPISODENUMBER As EpisodeNumber,
-	p.ZAUTHOR,
 	p.ZTITLE As Podcast,
     e.ZTITLE As Episode,
+	e.ZAUTHOR As Author,
 	datetime (e.ZPUBDATE + 978307200,
                 "unixepoch",
                 "utc") As EpisodePubDate,

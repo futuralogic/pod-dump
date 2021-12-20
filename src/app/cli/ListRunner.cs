@@ -42,12 +42,18 @@ public static class ListRunner
         {
             query = query.Where(r => r.PendingEpisodes > 0);
         }
+
         // Add an order by podcast title.
         query = query.OrderBy(r => r.Title);
 
         if (!options.ShowAll && !query.Any())
         {
             Out.Text("No podcasts pending extraction.");
+            return Task.CompletedTask;
+        }
+        else if (options.ShowAll && !query.Any())
+        {
+            Out.Text("No podcasts.");
             return Task.CompletedTask;
         }
 

@@ -40,7 +40,7 @@ public static class AddRunner
         var pm = new PodcastManager();
         var results = await pm.FindPodcast(searchTerm, isSearchExact);
 
-        var resultsToAdd = results.Where(p => !reglist.Any(r => r.Uuid.Equals(p.PodcastUUId)));
+        var resultsToAdd = results.Where(p => !reglist.Any(r => r.Uuid.ToString().Equals(p.PodcastUUId, StringComparison.OrdinalIgnoreCase)));
 
         if (!resultsToAdd.Any())
         {

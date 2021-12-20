@@ -23,10 +23,11 @@ public class TokenMeta
     [Token("day")]
     public int PublishedDay { get; set; }
 
-    public string Author { get; set; }
+    public string? Author { get; set; }
 
 }
 
+[AttributeUsage(validOn: AttributeTargets.Property)]
 public class TokenAttribute : System.Attribute
 {
     public string TokenKey { get; protected set; }
