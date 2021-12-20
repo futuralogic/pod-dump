@@ -1,8 +1,18 @@
-# Apple Podcast Dumper (pod-dump)
+# Apple Podcast Extractor (pod-dump)
 
-Extracts Apple podcasts, tags them, and puts them where you want.
+Copies podcast audio files from Apple's podcast app, tags them, and puts them where you want.
 
 A solution to the problem introduced by later versions of OSX and the dedicated Podcasts app that hides downloaded content from you.
+
+This app is built for OSX and depends on data from Apple's podcast app.
+
+# Background
+
+Apple's Podcast application hides and obfuscates the podcast audio files on your system. With the death of iTunes the podcasts are no longer stored in your Music folder but in an obscure system location. The stored files are given cryptic filenames. Fortunately, the ID3 tags are still intact.
+
+Although it is possible to manually find the files, copy them to a new location and rename them it is too much work if you regularly subscribe and save multiple podcasts.
+
+pod-dump aims to automate the process.
 
 # Usage
 
