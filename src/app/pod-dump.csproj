@@ -9,6 +9,9 @@
         <BaseVersion>1.0.0</BaseVersion>
         <Version Condition="'$(Configuration)'=='Debug'">$(BaseVersion)-dev</Version>
         <Version Condition="'$(Configuration)'!='Debug'">$(BaseVersion)</Version>
+        <!-- <SelfContained>true</SelfContained> -->
+        <RuntimeIdentifier>osx.10.14-x64</RuntimeIdentifier>
+        <!-- <PublishReadyToRun>true</PublishReadyToRun> -->
     </PropertyGroup>
 
     <ItemGroup>
