@@ -22,9 +22,21 @@ public static class TokenHandler
             var tokenAttr = prop.GetCustomAttribute<TokenAttribute>();
             if (tokenAttr != null)
             {
+                // Using the attribute - get the "token" to look for "year" for example
                 var findString = tokenAttr.TokenKey;
-                var val = prop.GetValue(model) as string ?? "";
-                working = working.Replace($"{{{findString}}}", val.Replace("/", "-").Replace("\\", "-").Replace("#", "").Replace(":", "-"));
+                // Retrieve the data value from our model for this property. Example: Year = 2021.
+                var valObj = prop.GetValue(model, null);
+
+                // if our value is not null, try to process it.
+                if (valObj != null)
+                {
+                    // Convert to a string for replacement
+                    var val = Convert.ToString(valObj);
+                    // Clean up the data value so it doesn't have illegal filenaming characters, or characters we don't want.
+                    var replaced = val?.Replace("/", "-").Replace("\\", "-").Replace("#", "").Replace(":", "-");
+                    // Replace the token (Ex. "{year}") in our working token string.
+                    working = working.Replace($"{{{findString}}}", replaced);
+                }
             }
         }
 
