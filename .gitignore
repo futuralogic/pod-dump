@@ -3,6 +3,9 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
+dist/
+!dist/pack.ps1
+
 ### VisualStudioCode ###
 .vscode/*      # Maybe .vscode/**/* instead - see comments
 !.vscode/settings.json
